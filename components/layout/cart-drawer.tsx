@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useState } from "react";
 import { Heart, Minus, Plus, ShoppingBag, X } from "lucide-react";
 import { products } from "@/data/products";
@@ -69,6 +70,7 @@ function CartSuggestionCard({ product, onNavigate }: { product: Product; onNavig
 
 /* ---------- Cart drawer ---------- */
 export default function CartDrawer() {
+  const router = useRouter();
   const isOpen = useCartStore((state) => state.isOpen);
   const close = useCartStore((state) => state.closeCart);
   const items = useCartStore((state) => state.items);
@@ -76,7 +78,19 @@ export default function CartDrawer() {
   const updateQuantity = useCartStore((state) => state.updateQuantity);
   const count = useCartStore(selectCartCount);
   const subtotal = useCartStore(selectCartSubtotal);
+  const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
+  const openAuthModal = useAuthStore((state) => state.openAuthModal);
   const [top, setTop] = useState(0);
+
+  // Guests can use the bag freely, but must sign in before checking out
+  function handleCheckout() {
+    close();
+    if (!isLoggedIn) {
+      openAuthModal("login");
+      return;
+    }
+    router.push("/checkout");
+  }
 
   // Start the drawer just below the black top bar (follows it as the page scrolls)
   useLayoutEffect(() => {
@@ -260,13 +274,13 @@ export default function CartDrawer() {
               <p className="mt-[6px] text-[13px] leading-[18px] text-[#6B6B6B]">
                 Shipping and taxes are calculated at checkout.
               </p>
-              <Link
-                href="/checkout"
-                onClick={close}
+              <button
+                type="button"
+                onClick={handleCheckout}
                 className="mt-[16px] flex h-[48px] w-full items-center justify-center rounded-full bg-black text-[16px] font-semibold text-white transition-colors hover:bg-[#333333]"
               >
                 Checkout
-              </Link>
+              </button>
             </div>
           </div>
         )}

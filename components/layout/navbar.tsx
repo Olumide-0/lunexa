@@ -4,16 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import {
-  ChevronDown,
-  Heart,
-  LogOut,
-  Menu,
-  Search,
-  ShoppingBag,
-  User,
-  X,
-} from "lucide-react";
+import { ChevronDown, Heart, LogOut, Menu, Search, ShoppingBag, User, X } from "lucide-react";
 import MegaMenu from "@/components/layout/mega-menu";
 import SearchOverlay from "@/components/layout/search-overlay";
 import { WishlistPanel } from "@/components/layout/wishlist-modal";
@@ -25,54 +16,41 @@ import logo from "../../public/images/image 14.png";
 
 export default function Navbar() {
   const pathname = usePathname();
+
+  // ----- Local UI state -----
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const accountRef = useRef<HTMLDivElement>(null);
+
+  // ----- Stores -----
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const user = useAuthStore((state) => state.user);
   const openAuthModal = useAuthStore((state) => state.openAuthModal);
   const openLogoutModal = useAuthStore((state) => state.openLogoutModal);
-  const isPanelOpen = useWishlistStore((state) => state.popup === "navbar");
+
   const wishlistCount = useWishlistStore((state) => state.items.length);
-  const openPopup = useWishlistStore((state) => state.openPopup);
-  const closePopup = useWishlistStore((state) => state.closePopup);
+  const wishlistPopup = useWishlistStore((state) => state.popup);
+  const openWishlistPopup = useWishlistStore((state) => state.openPopup);
+  const closeWishlistPopup = useWishlistStore((state) => state.closePopup);
+
   const cartCount = useCartStore(selectCartCount);
   const openCart = useCartStore((state) => state.openCart);
-  const closeCart = useCartStore((state) => state.closeCart);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [activeMenu, setActiveMenu] = useState<string | null>(null);
-  const [accountOpen, setAccountOpen] = useState(false);
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const accountRef = useRef<HTMLDivElement>(null);
 
-  // First name if we have it, otherwise the part of the email before "@"
-  const displayName = user?.firstName || user?.email.split("@")[0] || "Account";
-
-  // Only signed-in users can save, so only they see the wishlist count
-  const showWishlistCount = isLoggedIn && wishlistCount > 0;
-  const wishlistCountLabel = wishlistCount > 9 ? "9+" : String(wishlistCount);
-  const cartCountLabel = cartCount > 9 ? "9+" : String(cartCount);
-
-  // Heart is filled while the panel is open or while on the wishlist page
-  const heartFilled = isPanelOpen || pathname === "/wishlist";
-
-  // Load the saved sign-in, wishlist and bag from localStorage after the page mounts
+  // Load the saved auth, wishlist and cart from localStorage once the page is in the browser.
+  // (The stores use skipHydration, so the server and first browser render match.)
   useEffect(() => {
-    useAuthStore.persist.rehydrate();
-    useWishlistStore.persist.rehydrate();
-    useCartStore.persist.rehydrate();
+    Promise.all([
+      useAuthStore.persist.rehydrate(),
+      useWishlistStore.persist.rehydrate(),
+      useCartStore.persist.rehydrate(),
+    ]).then(() => setHydrated(true));
   }, []);
 
-  // Close the account dropdown when clicking anywhere outside it
-  useEffect(() => {
-    if (!accountOpen) return;
-    function handleClickOutside(e: MouseEvent) {
-      if (accountRef.current && !accountRef.current.contains(e.target as Node)) {
-        setAccountOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [accountOpen]);
-
+  // ----- Mega menu (hover) -----
   function cancelClose() {
     if (closeTimer.current) {
       clearTimeout(closeTimer.current);
@@ -82,7 +60,6 @@ export default function Navbar() {
 
   function openMenu(label: string) {
     cancelClose();
-    if (isPanelOpen) closePopup(); // don't show the wishlist panel and mega menu together
     setActiveMenu(label);
   }
 
@@ -97,44 +74,7 @@ export default function Navbar() {
     setActiveMenu(null);
   }
 
-  // Open the search panel and close anything else that's open
-  function openSearch() {
-    closeMenu();
-    if (isPanelOpen) closePopup();
-    closeCart();
-    setMobileOpen(false);
-    setAccountOpen(false);
-    setSearchOpen(true);
-  }
-
-  // Signed-out heart: open or close the "save to wishlist" panel
-  function toggleWishlistPanel() {
-    closeMenu();
-    closeCart();
-    if (isPanelOpen) {
-      closePopup();
-    } else {
-      openPopup("navbar");
-    }
-  }
-
-  // Signed-in heart: going to the wishlist page, so close anything open
-  function goToWishlist() {
-    closeMenu();
-    closeCart();
-    setMobileOpen(false);
-  }
-
-  // Bag: open the cart drawer and close the wishlist popups
-  function handleCartClick() {
-    closeMenu();
-    closePopup();
-    setAccountOpen(false);
-    setMobileOpen(false);
-    openCart();
-  }
-
-  // Close the mega menu with the Escape key
+  // Escape closes the mega menu and the account dropdown
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
@@ -146,47 +86,50 @@ export default function Navbar() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  // Clicking anywhere outside the account dropdown closes it
+  useEffect(() => {
+    if (!accountOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (accountRef.current && !accountRef.current.contains(e.target as Node)) {
+        setAccountOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [accountOpen]);
+
   const currentMenu = navMenus.find((menu) => menu.label === activeMenu);
 
-  // Looks like an input, but opens the search panel
-  const searchTrigger = (
-    <button
-      type="button"
-      onClick={openSearch}
-      aria-label="Search products"
-      aria-expanded={searchOpen}
-      className="flex h-[46px] w-full items-center gap-[12px] bg-[#DCDCDC] px-[14px] text-left lg:w-[232px]"
-    >
-      <Search strokeWidth={1.75} className="size-[20px] shrink-0 text-black" />
-      <span className="truncate text-[15px] text-[#737373]">
-        What are you looking for today?
-      </span>
-    </button>
-  );
+  // Only trust the stores after they've loaded (avoids a "signed out" flash)
+  const signedIn = hydrated && isLoggedIn;
+  const onWishlistPage = pathname === "/wishlist";
 
-  const heartIcon = (
-    <>
-      <Heart strokeWidth={1.5} className={`size-[24px] ${heartFilled ? "fill-black" : ""}`} />
-      {showWishlistCount && (
-        <span className="absolute -right-[8px] -top-[6px] flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-black px-[4px] text-[11px] font-semibold leading-none text-white">
-          {wishlistCountLabel}
-        </span>
-      )}
-    </>
-  );
+  // Signed out: the heart opens the small wishlist panel (toggle)
+  function handleWishlistPanel() {
+    if (wishlistPopup === "navbar") closeWishlistPopup();
+    else openWishlistPopup("navbar");
+  }
 
-  const wishlistLabel = showWishlistCount
-    ? `Wishlist, ${wishlistCount} item${wishlistCount === 1 ? "" : "s"}`
-    : "Wishlist";
+  function handleLogout() {
+    setAccountOpen(false);
+    setMobileOpen(false);
+    openLogoutModal();
+  }
+
+  function handleLogin() {
+    setMobileOpen(false);
+    openAuthModal("login");
+  }
 
   return (
     <header className="sticky top-0 z-40 bg-[#EBEBEB]/70">
-      <div className="mx-auto grid h-[72px] w-full max-w-[1440px] grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center px-[16px] lg:h-[103px] lg:px-[34px]">
+      <div className="grid h-[72px] w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center px-[16px] lg:h-[85px] lg:px-[34px]">
         {/* Left: logo (desktop) / menu button (mobile) */}
         <div className="flex items-center">
           <button
             type="button"
             aria-label={mobileOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileOpen}
             onClick={() => setMobileOpen((prev) => !prev)}
             className="lg:hidden"
           >
@@ -197,12 +140,12 @@ export default function Navbar() {
             )}
           </button>
           <Link href="/" aria-label="Lunexa home" className="hidden lg:block">
-            <Image src={logo} alt="Lunexa" priority className="h-[40px] w-auto" />
+            <Image src={logo} alt="Lunexa" priority className="h-auto w-[106px]" />
           </Link>
         </div>
 
         {/* Center: nav links with mega menu (desktop) */}
-        <nav className="hidden h-full items-center gap-[28px] self-stretch lg:flex">
+        <nav className="hidden h-full items-center gap-[51px] self-stretch lg:flex">
           {navMenus.map((menu) => {
             const isActive = activeMenu === menu.label;
             return (
@@ -218,13 +161,11 @@ export default function Navbar() {
                   aria-expanded={isActive}
                   onFocus={() => openMenu(menu.label)}
                   onClick={closeMenu}
-                  className="px-[15px] text-[18px] font-bold uppercase text-black"
+                  className="text-[16px] font-bold uppercase leading-[20px] text-black"
                 >
                   {menu.label}
                 </Link>
-                {isActive && (
-                  <span className="absolute inset-x-0 bottom-0 h-[3px] bg-black" />
-                )}
+                {isActive && <span className="absolute inset-x-0 bottom-0 h-[3px] bg-black" />}
               </div>
             );
           })}
@@ -236,59 +177,86 @@ export default function Navbar() {
         </Link>
 
         {/* Right: search + icons */}
-        <div className="flex items-center justify-end gap-[20px] lg:gap-[22px]">
-          <div className="hidden lg:block">{searchTrigger}</div>
+        <div className="flex items-center justify-end gap-[16px] lg:gap-[24px]">
+          {/* Search trigger (desktop) — opens the search overlay */}
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
+            aria-label="Search products"
+            className="hidden h-[46px] w-[232px] shrink-0 items-center gap-[12px] bg-[#D4D4D4] px-[14px] text-left lg:flex"
+          >
+            <Search strokeWidth={1.75} className="size-[20px] shrink-0 text-black" />
+            <span className="truncate text-[15px] leading-[20px] text-[#6B6B6B]">
+              What are you looking for today?
+            </span>
+          </button>
 
-          {/* Wishlist: page when signed in, panel when signed out */}
-          {isLoggedIn ? (
-            <Link
-              href="/wishlist"
-              aria-label={wishlistLabel}
-              onClick={goToWishlist}
-              className="relative hidden sm:block"
-            >
-              {heartIcon}
+          {/* Search icon (mobile) */}
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
+            aria-label="Search products"
+            className="lg:hidden"
+          >
+            <Search strokeWidth={1.5} className="size-[20px]" />
+          </button>
+
+          {/* Wishlist */}
+          {signedIn ? (
+            <Link href="/wishlist" aria-label={`Wishlist (${wishlistCount})`} className="relative hidden sm:block">
+              <Heart
+                strokeWidth={1.5}
+                className={`size-[20px] text-black ${onWishlistPage ? "fill-black" : ""}`}
+              />
+              {wishlistCount > 0 && (
+                <span className="absolute -right-[8px] -top-[8px] flex size-[16px] items-center justify-center rounded-full bg-black text-[10px] font-semibold leading-none text-white">
+                  {wishlistCount > 99 ? "99+" : wishlistCount}
+                </span>
+              )}
             </Link>
           ) : (
             <button
               type="button"
-              aria-label={wishlistLabel}
-              aria-expanded={isPanelOpen}
-              onClick={toggleWishlistPanel}
-              className="relative hidden sm:block"
+              aria-label="Wishlist"
+              aria-expanded={wishlistPopup === "navbar"}
+              onClick={handleWishlistPanel}
+              className="hidden sm:block"
             >
-              {heartIcon}
+              <Heart strokeWidth={1.5} className="size-[20px] text-black" />
             </button>
           )}
 
           {/* Account */}
-          {isLoggedIn ? (
+          {signedIn ? (
             <div ref={accountRef} className="relative hidden sm:block">
               <button
                 type="button"
-                aria-haspopup="true"
+                aria-haspopup="menu"
                 aria-expanded={accountOpen}
                 onClick={() => setAccountOpen((prev) => !prev)}
-                className="flex items-center gap-[4px] text-[16px] font-semibold capitalize text-black"
+                className="flex items-center gap-[6px]"
               >
-                <span className="max-w-[100px] truncate">{displayName}</span>
+                <span className="max-w-[118px] truncate text-[16px] font-semibold leading-[20px] text-black">
+                  {user?.firstName || user?.email}
+                </span>
                 <ChevronDown
                   strokeWidth={1.75}
-                  className={`size-[18px] transition-transform duration-200 ${accountOpen ? "rotate-180" : ""}`}
+                  className={`size-[16px] text-black transition-transform ${accountOpen ? "rotate-180" : ""}`}
                 />
               </button>
 
               {accountOpen && (
-                <div className="absolute right-0 top-full z-50 mt-[12px] w-[180px] rounded-[6px] bg-white py-[6px] shadow-lg">
+                <div
+                  role="menu"
+                  className="absolute right-0 top-[calc(100%+12px)] w-[180px] rounded-[4px] bg-white py-[6px] shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
+                >
                   <button
                     type="button"
-                    onClick={() => {
-                      setAccountOpen(false);
-                      openLogoutModal();
-                    }}
-                    className="flex w-full items-center gap-[10px] px-[16px] py-[10px] text-left text-[15px] text-black hover:bg-[#F2F2F2]"
+                    role="menuitem"
+                    onClick={handleLogout}
+                    className="flex w-full items-center gap-[10px] px-[16px] py-[10px] text-[14px] text-black hover:bg-[#F2F2F2]"
                   >
-                    <LogOut strokeWidth={1.5} className="size-[18px]" />
+                    <LogOut strokeWidth={1.5} className="size-[16px]" />
                     Log out
                   </button>
                 </div>
@@ -301,23 +269,16 @@ export default function Navbar() {
               onClick={() => openAuthModal("login")}
               className="hidden sm:block"
             >
-              <User strokeWidth={1.5} className="size-[24px]" />
+              <User strokeWidth={1.5} className="size-[20px] text-black" />
             </button>
           )}
 
           {/* Bag */}
-          <button
-            type="button"
-            aria-label={
-              cartCount > 0 ? `Bag, ${cartCount} item${cartCount === 1 ? "" : "s"}` : "Bag"
-            }
-            onClick={handleCartClick}
-            className="relative"
-          >
-            <ShoppingBag strokeWidth={1.5} className="size-[24px]" />
-            {cartCount > 0 && (
-              <span className="absolute -right-[8px] -top-[6px] flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-black px-[4px] text-[11px] font-semibold leading-none text-white">
-                {cartCountLabel}
+          <button type="button" aria-label={`Bag (${cartCount})`} onClick={openCart} className="relative">
+            <ShoppingBag strokeWidth={1.5} className="size-[20px] text-black" />
+            {hydrated && cartCount > 0 && (
+              <span className="absolute -right-[8px] -top-[8px] flex size-[16px] items-center justify-center rounded-full bg-black text-[10px] font-semibold leading-none text-white">
+                {cartCount > 99 ? "99+" : cartCount}
               </span>
             )}
           </button>
@@ -335,75 +296,54 @@ export default function Navbar() {
         />
       )}
 
-      {/* Wishlist panel (signed out only) */}
-      <WishlistPanel />
-
-      {/* Search panel */}
-      <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
-
       {/* Mobile menu panel */}
       {mobileOpen && (
-        <div className="border-t border-[#D4D4D4] lg:hidden">
-          <div className="w-11/12 container mx-auto px-[16px] pb-[24px] pt-[16px]">
-            {searchTrigger}
-            <nav className="mt-[16px] flex flex-col">
-              {navMenus.map((menu) => (
-                <Link
-                  key={menu.href}
-                  href={menu.href}
-                  onClick={() => setMobileOpen(false)}
-                  className="border-b border-[#D4D4D4] py-[14px] text-[16px] font-bold uppercase"
-                >
-                  {menu.label}
-                </Link>
-              ))}
-              {isLoggedIn ? (
-                <Link
-                  href="/wishlist"
-                  onClick={goToWishlist}
-                  className="border-b border-[#D4D4D4] py-[14px] text-[16px] font-bold uppercase"
-                >
-                  Wishlist{showWishlistCount ? ` (${wishlistCount})` : ""}
-                </Link>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileOpen(false);
-                    toggleWishlistPanel();
-                  }}
-                  className="border-b border-[#D4D4D4] py-[14px] text-left text-[16px] font-bold uppercase"
-                >
-                  Wishlist
-                </button>
-              )}
-              {isLoggedIn ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileOpen(false);
-                    openLogoutModal();
-                  }}
-                  className="py-[14px] text-left text-[16px] font-bold uppercase"
-                >
-                  Log out ({displayName})
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileOpen(false);
-                    openAuthModal("login");
-                  }}
-                  className="py-[14px] text-left text-[16px] font-bold uppercase"
-                >
-                  Log in
-                </button>
-              )}
-            </nav>
-          </div>
+        <div className="border-t border-[#D4D4D4] px-[16px] pb-[24px] pt-[8px] lg:hidden">
+          <nav className="flex flex-col">
+            {navMenus.map((menu) => (
+              <Link
+                key={menu.href}
+                href={menu.href}
+                onClick={() => setMobileOpen(false)}
+                className="border-b border-[#D4D4D4] py-[14px] text-[16px] font-bold uppercase"
+              >
+                {menu.label}
+              </Link>
+            ))}
+            {signedIn ? (
+              <Link
+                href="/wishlist"
+                onClick={() => setMobileOpen(false)}
+                className="border-b border-[#D4D4D4] py-[14px] text-left text-[16px] font-bold uppercase"
+              >
+                Wishlist {wishlistCount > 0 && `(${wishlistCount})`}
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileOpen(false);
+                  openWishlistPopup("navbar");
+                }}
+                className="border-b border-[#D4D4D4] py-[14px] text-left text-[16px] font-bold uppercase"
+              >
+                Wishlist
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={signedIn ? handleLogout : handleLogin}
+              className="py-[14px] text-left text-[16px] font-bold uppercase"
+            >
+              {signedIn ? "Log out" : "Log in"}
+            </button>
+          </nav>
         </div>
       )}
+
+      {/* Search overlay + signed-out wishlist panel */}
+      {searchOpen && <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />}
+      <WishlistPanel />
     </header>
   );
 }
