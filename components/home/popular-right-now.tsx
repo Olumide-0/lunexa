@@ -5,8 +5,9 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Heart } from "lucide-react";
 import { useAuthStore } from "@/store/auth-store";
+import { useCartStore } from "@/store/cart-store";
 import { useWishlistStore } from "@/store/wishlist-store";
-import type { WishlistItem } from "@/types";
+import type { Product, WishlistItem } from "@/types";
 import women1 from "../../public/images/Frame 7 (7).png";
 import women2 from "../../public/images/Frame 7 (8).png";
 import women3 from "../../public/images/Frame 7 (9).png";
@@ -91,12 +92,36 @@ const collections: Record<Audience, Collection[]> = {
   ],
 };
 
+// Sizes shown in the hover panel
+const cardSizes = ["XXS", "XS", "S", "M", "L", "XL", "XXL"];
+
+// Turns a card into a Product so it can go in the bag.
+// Placeholder price/stock until the backend gives real products.
+function toProduct(item: Collection, audience: Audience): Product {
+  return {
+    id: `popular-${audience}-${item.id}`,
+    slug: `popular-${audience}-${item.id}`,
+    name: item.title,
+    subtitle: audience === "women" ? "Women" : "Men",
+    description: item.title,
+    price: 40,
+    images: [item.image],
+    category: audience,
+    sizes: cardSizes,
+    colors: [],
+    stock: 20,
+    rating: 0,
+    reviewCount: 0,
+  };
+}
+
 export default function PopularRightNow() {
   const [audience, setAudience] = useState<Audience>("women");
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const savedItems = useWishlistStore((state) => state.items);
   const toggleItem = useWishlistStore((state) => state.toggleItem);
   const openPopup = useWishlistStore((state) => state.openPopup);
+  const addToCart = useCartStore((state) => state.addItem);
   const trackRef = useRef<HTMLDivElement>(null);
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(false);
@@ -213,10 +238,11 @@ export default function PopularRightNow() {
           };
           const showFilled =
             isLoggedIn && savedItems.some((saved) => saved.id === wishlistItem.id);
+          const product = toProduct(item, audience);
 
           return (
             <article key={wishlistItem.id} className="w-[80vw] shrink-0 snap-start sm:w-[446px]">
-              <div className="relative aspect-[446/565] overflow-hidden rounded-[6px] bg-[#E8E8E8]">
+              <div className="group relative aspect-[446/565] overflow-hidden rounded-[6px] bg-[#E8E8E8]">
                 <Image
                   src={item.image}
                   alt={item.title}
@@ -236,6 +262,23 @@ export default function PopularRightNow() {
                     className={`size-[16px] text-black ${showFilled ? "fill-black" : ""}`}
                   />
                 </button>
+
+                {/* Hover: size panel slides up. Clicking a size adds it to the bag. */}
+                <div className="absolute inset-x-0 bottom-0 translate-y-full bg-[#F2F2F2]/60 px-[22px] py-[24px] opacity-0 transition-all duration-300 ease-out group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:translate-y-0 group-hover:opacity-100">
+                  <div className="grid grid-cols-5 gap-x-[12px] gap-y-[12px]">
+                    {cardSizes.map((size) => (
+                      <button
+                        key={size}
+                        type="button"
+                        aria-label={`Add ${item.title} size ${size} to bag`}
+                        onClick={() => addToCart(product, size)}
+                        className="flex h-[34px] items-center justify-center rounded-[3px] bg-white text-[14px] font-semibold leading-none text-black transition-colors hover:bg-black hover:text-white"
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               <h3 className="mt-[20px] text-[20px] font-bold uppercase leading-[24px] text-black">

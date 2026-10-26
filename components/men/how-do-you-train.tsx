@@ -5,8 +5,9 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Heart } from "lucide-react";
 import { useAuthStore } from "@/store/auth-store";
+import { useCartStore } from "@/store/cart-store";
 import { useWishlistStore } from "@/store/wishlist-store";
-import type { WishlistItem } from "@/types";
+import type { Product, WishlistItem } from "@/types";
 import train1 from "../../public/images/Frame 7 (49).png";
 import train2 from "../../public/images/Frame 7 (50).png";
 import train3 from "../../public/images/Frame 7 (51).png";
@@ -53,6 +54,29 @@ const trainItems: TrainItem[] = [
   },
 ];
 
+// Sizes shown in the hover panel
+const cardSizes = ["XXS", "XS", "S", "M", "L", "XL", "XXL"];
+
+// Turns a card into a Product so it can go in the bag.
+// Placeholder price/stock until the backend gives real products.
+function toProduct(item: TrainItem): Product {
+  return {
+    id: `men-train-${item.id}`,
+    slug: `men-train-${item.id}`,
+    name: item.title,
+    subtitle: "Men",
+    description: item.description,
+    price: 40,
+    images: [item.image],
+    category: "men",
+    sizes: cardSizes,
+    colors: [],
+    stock: 20,
+    rating: 0,
+    reviewCount: 0,
+  };
+}
+
 /* ---------- Card for this section ---------- */
 function MenTrainCard({ item }: { item: TrainItem }) {
   const wishlistItem: WishlistItem = {
@@ -68,6 +92,8 @@ function MenTrainCard({ item }: { item: TrainItem }) {
   );
   const toggleItem = useWishlistStore((state) => state.toggleItem);
   const openPopup = useWishlistStore((state) => state.openPopup);
+  const addToCart = useCartStore((state) => state.addItem);
+  const product = toProduct(item);
 
   // Signed out: ask them to sign in. Signed in: save / unsave.
   function handleHeartClick() {
@@ -82,7 +108,7 @@ function MenTrainCard({ item }: { item: TrainItem }) {
 
   return (
     <article className="w-[80vw] shrink-0 snap-start sm:w-[446px]">
-      <div className="relative aspect-[446/565] overflow-hidden rounded-[6px] bg-[#1A1A1A]">
+      <div className="group relative aspect-[446/565] overflow-hidden rounded-[6px] bg-[#1A1A1A]">
         <Image
           src={item.image}
           alt={item.title}
@@ -102,6 +128,23 @@ function MenTrainCard({ item }: { item: TrainItem }) {
             className={`size-[16px] text-black ${showFilled ? "fill-black" : ""}`}
           />
         </button>
+
+        {/* Hover: size panel slides up. Clicking a size adds it to the bag. */}
+        <div className="absolute inset-x-0 bottom-0 translate-y-full bg-[#F2F2F2]/60 px-[22px] py-[24px] opacity-0 transition-all duration-300 ease-out group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:translate-y-0 group-hover:opacity-100">
+          <div className="grid grid-cols-5 gap-x-[12px] gap-y-[12px]">
+            {cardSizes.map((size) => (
+              <button
+                key={size}
+                type="button"
+                aria-label={`Add ${item.title} size ${size} to bag`}
+                onClick={() => addToCart(product, size)}
+                className="flex h-[34px] items-center justify-center rounded-[3px] bg-white text-[14px] font-semibold leading-none text-black transition-colors hover:bg-black hover:text-white"
+              >
+                {size}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       <h3 className="mt-[20px] text-[20px] font-bold uppercase leading-[24px] text-black">

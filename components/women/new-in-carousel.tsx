@@ -7,13 +7,14 @@ import { ChevronLeft, ChevronRight, Heart } from "lucide-react";
 import { products } from "@/data/products";
 import { formatPrice, productToWishlistItem } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth-store";
+import { useCartStore } from "@/store/cart-store";
 import { useWishlistStore } from "@/store/wishlist-store";
 import type { Product } from "@/types";
 
 // Only the Lift Seamless 2.0 products
 const newInProducts = products.filter((p) => p.collection === "lift-seamless-2");
 
-/* ---------- Card for this section (no hover state) ---------- */
+/* ---------- Card for this section ---------- */
 function NewInCard({ product }: { product: Product }) {
   const wishlistItem = productToWishlistItem(product);
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
@@ -22,6 +23,7 @@ function NewInCard({ product }: { product: Product }) {
   );
   const toggleItem = useWishlistStore((state) => state.toggleItem);
   const openPopup = useWishlistStore((state) => state.openPopup);
+  const addToCart = useCartStore((state) => state.addItem);
 
   // Signed out: ask them to sign in. Signed in: save / unsave.
   function handleHeartClick() {
@@ -36,7 +38,7 @@ function NewInCard({ product }: { product: Product }) {
 
   return (
     <article className="w-[80vw] shrink-0 snap-start sm:w-[446px]">
-      <div className="relative aspect-[446/565] overflow-hidden rounded-[6px] bg-[#E8E4DF]">
+      <div className="group relative aspect-[446/565] overflow-hidden rounded-[6px] bg-[#E8E4DF]">
         <Link href={wishlistItem.href} aria-label={product.name} className="absolute inset-0">
           <Image
             src={product.images[0]}
@@ -61,12 +63,29 @@ function NewInCard({ product }: { product: Product }) {
           />
         </button>
 
-        {/* Badge: always visible */}
+        {/* Badge: hides while the size panel shows */}
         {product.badge && (
-          <span className="absolute bottom-[25px] left-[15px] bg-white px-[11px] py-[6px] text-[15px] font-semibold uppercase leading-[20px] text-black">
+          <span className="absolute bottom-[25px] left-[15px] bg-white px-[11px] py-[6px] text-[15px] font-semibold uppercase leading-[20px] text-black transition-opacity duration-300 group-focus-within:opacity-0 group-hover:opacity-0">
             {product.badge}
           </span>
         )}
+
+        {/* Hover: size panel slides up. Clicking a size adds it to the bag. */}
+        <div className="absolute inset-x-0 bottom-0 translate-y-full bg-[#F2F2F2]/60 px-[22px] py-[24px] opacity-0 transition-all duration-300 ease-out group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:translate-y-0 group-hover:opacity-100">
+          <div className="grid grid-cols-5 gap-x-[12px] gap-y-[12px]">
+            {product.sizes.map((size) => (
+              <button
+                key={size}
+                type="button"
+                aria-label={`Add ${product.name} size ${size} to bag`}
+                onClick={() => addToCart(product, size)}
+                className="flex h-[34px] items-center justify-center rounded-[3px] bg-white text-[14px] font-semibold leading-none text-black transition-colors hover:bg-black hover:text-white"
+              >
+                {size}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div className="mt-[20px]">
