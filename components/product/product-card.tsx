@@ -5,10 +5,17 @@ import Link from "next/link";
 import { Heart } from "lucide-react";
 import { formatPrice, productToWishlistItem } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth-store";
+import { useCartStore } from "@/store/cart-store";
 import { useWishlistStore } from "@/store/wishlist-store";
 import type { Product } from "@/types";
 
-export default function ProductCard({ product }: { product: Product }) {
+export default function ProductCard({
+  product,
+  linkImage = true,
+}: {
+  product: Product;
+  linkImage?: boolean; // false = clicking the image does nothing
+}) {
   const wishlistItem = productToWishlistItem(product);
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const isSaved = useWishlistStore((state) =>
@@ -16,6 +23,7 @@ export default function ProductCard({ product }: { product: Product }) {
   );
   const toggleItem = useWishlistStore((state) => state.toggleItem);
   const openPopup = useWishlistStore((state) => state.openPopup);
+  const addToCart = useCartStore((state) => state.addItem);
   const productHref = wishlistItem.href;
 
   // Signed out: ask them to sign in. Signed in: save / unsave.
@@ -29,18 +37,26 @@ export default function ProductCard({ product }: { product: Product }) {
 
   const showFilled = isLoggedIn && isSaved;
 
+  const image = (
+    <Image
+      src={product.images[0]}
+      alt={product.name}
+      fill
+      sizes="(min-width: 640px) 446px, 80vw"
+      className="object-cover"
+    />
+  );
+
   return (
     <article className="group w-[80vw] shrink-0 snap-start sm:w-[446px]">
       <div className="relative aspect-[446/565] overflow-hidden rounded-[6px] bg-[#E8E4DF]">
-        <Link href={productHref} aria-label={product.name} className="absolute inset-0">
-          <Image
-            src={product.images[0]}
-            alt={product.name}
-            fill
-            sizes="(min-width: 640px) 446px, 80vw"
-            className="object-cover"
-          />
-        </Link>
+        {linkImage ? (
+          <Link href={productHref} aria-label={product.name} className="absolute inset-0">
+            {image}
+          </Link>
+        ) : (
+          image
+        )}
 
         {/* Wishlist heart */}
         <button
@@ -63,16 +79,18 @@ export default function ProductCard({ product }: { product: Product }) {
           </span>
         )}
 
-        {/* Size panel: shown while hovering */}
+        {/* Size panel: shown while hovering. Clicking a size adds it to the bag. */}
         <div className="absolute inset-x-0 bottom-0 grid grid-cols-5 gap-x-[12px] gap-y-[13px] bg-[#E8E8E8]/85 p-[22px] opacity-0 transition-opacity duration-200 group-focus-within:opacity-100 group-hover:opacity-100">
           {product.sizes.map((size) => (
-            <Link
+            <button
               key={size}
-              href={`${productHref}?size=${encodeURIComponent(size)}`}
+              type="button"
+              aria-label={`Add ${product.name} size ${size} to bag`}
+              onClick={() => addToCart(product, size)}
               className="flex h-[32px] items-center justify-center bg-white text-[15px] font-semibold uppercase text-black transition-colors hover:bg-black hover:text-white"
             >
               {size}
-            </Link>
+            </button>
           ))}
         </div>
       </div>

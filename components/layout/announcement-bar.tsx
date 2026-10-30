@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { useCurrencyStore, type CurrencyCode } from "@/store/currency-store";
 
 type Option = {
   value: string;
@@ -10,7 +11,7 @@ type Option = {
   flag?: string; // country code for flagcdn, e.g. "us"
 };
 
-const countries: (Option & { currency: string })[] = [
+const countries: (Option & { currency: CurrencyCode })[] = [
   { value: "us", label: "United States", flag: "us", currency: "USD" },
   { value: "ng", label: "Nigeria", flag: "ng", currency: "NGN" },
   { value: "gb", label: "United Kingdom", flag: "gb", currency: "GBP" },
@@ -106,38 +107,48 @@ function SelectMenu({
 }
 
 export default function AnnouncementBar() {
-  const [country, setCountry] = useState("us");
-  const [currency, setCurrency] = useState("USD");
+  // Saved in the currency store so every price on the site can read it
+  const country = useCurrencyStore((state) => state.country);
+  const currency = useCurrencyStore((state) => state.currency);
+  const setCountry = useCurrencyStore((state) => state.setCountry);
+  const setCurrency = useCurrencyStore((state) => state.setCurrency);
+
+  // 1. Load the saved country/currency/rates from localStorage
+  // 2. Then fetch live exchange rates (skipped if the saved ones are under 12 hours old)
+  useEffect(() => {
+    async function init() {
+      await useCurrencyStore.persist.rehydrate();
+      await useCurrencyStore.getState().loadRates();
+    }
+    init();
+  }, []);
 
   function handleCountryChange(value: string) {
-    setCountry(value);
     // Picking a country also switches to its currency
     const match = countries.find((c) => c.value === value);
-    if (match) setCurrency(match.currency);
+    if (match) setCountry(match.value, match.currency);
   }
 
   return (
-    <div className="bg-black">
-      <div className="w-11/12 container mx-auto flex min-h-[68px] items-center justify-center gap-[16px] px-[16px] py-[14px]">
-        <p className="hidden text-[16px] font-bold uppercase text-white sm:block">
-          Are you in the right place?
-        </p>
-        <div className="flex items-center gap-[8px]">
-          <SelectMenu
-            label="Select country"
-            options={countries}
-            value={country}
-            onChange={handleCountryChange}
-            widthClass="w-[180px] sm:w-[198px]"
-          />
-          <SelectMenu
-            label="Select currency"
-            options={currencies}
-            value={currency}
-            onChange={setCurrency}
-            widthClass="w-[86px]"
-          />
-        </div>
+    <div className="flex min-h-[68px] items-center justify-center gap-[16px] bg-black px-[16px] py-[14px]">
+      <p className="hidden text-[16px] font-bold uppercase text-white sm:block">
+        Are you in the right place?
+      </p>
+      <div className="flex items-center gap-[8px]">
+        <SelectMenu
+          label="Select country"
+          options={countries}
+          value={country}
+          onChange={handleCountryChange}
+          widthClass="w-[180px] sm:w-[198px]"
+        />
+        <SelectMenu
+          label="Select currency"
+          options={currencies}
+          value={currency}
+          onChange={(value) => setCurrency(value as CurrencyCode)}
+          widthClass="w-[86px]"
+        />
       </div>
     </div>
   );

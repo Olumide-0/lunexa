@@ -1,3 +1,4 @@
+import { currencies, useCurrencyStore } from "@/store/currency-store";
 import type { Product, WishlistItem } from "@/types";
 
 // Turns "T-shirts & Tops" into "t-shirts-and-tops" so it can be used in a URL
@@ -9,16 +10,22 @@ export function slugify(text: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
-// 40 → "$40", 40.5 → "$40.50"
-export function formatPrice(amount: number): string {
-  return new Intl.NumberFormat("en-US", {
+// Takes a USD price and shows it in the currency picked in the top bar.
+// e.g. with 1 USD = 1,350 NGN: 40 → "₦54,000"
+export function formatPrice(amountInUsd: number): string {
+  const { currency: code, rates } = useCurrencyStore.getState();
+  const { locale, decimals } = currencies[code];
+  const rate = rates[code]; // live rate from the API (or the backup rate)
+
+  return new Intl.NumberFormat(locale, {
     style: "currency",
-    currency: "USD",
+    currency: code,
     minimumFractionDigits: 0,
-  }).format(amount);
+    maximumFractionDigits: decimals,
+  }).format(amountInUsd * rate);
 }
 
-// Converts a product into the snapshot the wishlist saves
+// Turns a product into the small snapshot the wishlist stores
 export function productToWishlistItem(product: Product): WishlistItem {
   return {
     id: `product-${product.id}`,

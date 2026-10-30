@@ -8,31 +8,40 @@ import PromoBanner from "@/components/home/promo-banner";
 import { looks } from "@/data/looks";
 import { products } from "@/data/products";
 
-export default function Home() {
+// Products for the two homepage carousels
+const whiteSimmonsProducts = products.filter((p) => p.collection === "white-simmons");
+const workoutShirtProducts = products.filter((p) => p.collection === "workout-shirts");
+
+export default function HomePage() {
   return (
     <>
       <Hero />
       <GetTheLook title="Best Seller" looks={looks} />
-      {/* Search → Trending → "Whitney" scrolls here */}
-      <div id="white-simmons" className="scroll-mt-[72px] lg:scroll-mt-[103px]">
+
+      {/* id lets the search "Whitney" link scroll here; scroll-mt keeps it below the sticky navbar */}
+      <div id="white-simmons" className="scroll-mt-[72px] lg:scroll-mt-[85px]">
         <ProductCarousel
           eyebrow="Women"
           title="White Simmons"
-          viewAllHref="/women/white-simmons"
-          products={products.filter((p) => p.collection === "white-simmons")}
+          products={whiteSimmonsProducts}
+          linkImages={false}
         />
       </div>
+
       <PromoBanner />
+
       <ProductCarousel
         eyebrow="Men"
         title="Workout shirts you’ll want to live in"
-        viewAllHref="/men/t-shirts-and-tops"
-        products={products.filter((p) => p.collection === "workout-shirts")}
+        products={workoutShirtProducts}
+        linkImages={false}
       />
-      {/* Search → Trending → "Pink Gym Sets" scrolls here */}
-      <div id="popular-right-now" className="scroll-mt-[72px] lg:scroll-mt-[103px]">
+
+      {/* id lets the search "Pink Gym Sets" link scroll here */}
+      <div id="popular-right-now" className="scroll-mt-[72px] lg:scroll-mt-[85px]">
         <PopularRightNow />
       </div>
+
       <HowDoYouTrain />
       <MainCategories />
     </>
