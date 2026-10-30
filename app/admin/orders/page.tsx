@@ -27,7 +27,7 @@ async function OrdersContent({ searchParams }: { searchParams: Promise<{ status?
 
   await connectDB();
   const [orders, counts] = await Promise.all([
-    Order.find(activeStatus ? { status: activeStatus } : {})
+        Order.find(activeStatus ? { status: activeStatus as OrderDoc["status"] } : {})
       .sort({ createdAt: -1 })
       .limit(100)
       .lean<OrderLean[]>(),
