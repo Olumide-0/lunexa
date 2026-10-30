@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useState } from "react";
 import { Heart, Minus, Plus, ShoppingBag, X } from "lucide-react";
-import { products } from "@/data/products";
 import { formatPrice, productToWishlistItem } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth-store";
 import { selectCartCount, selectCartSubtotal, useCartStore } from "@/store/cart-store";
@@ -69,7 +68,8 @@ function CartSuggestionCard({ product, onNavigate }: { product: Product; onNavig
 }
 
 /* ---------- Cart drawer ---------- */
-export default function CartDrawer() {
+// `suggestions` = the "People also bought" products, passed in by the shop layout (from MongoDB)
+export default function CartDrawer({ suggestions }: { suggestions: Product[] }) {
   const router = useRouter();
   const isOpen = useCartStore((state) => state.isOpen);
   const close = useCartStore((state) => state.closeCart);
@@ -122,9 +122,6 @@ export default function CartDrawer() {
   }, [isOpen, close]);
 
   if (!isOpen) return null;
-
-  // Placeholder suggestions: the first 3 products. The backend can return real ones later.
-  const suggestions = products.slice(0, 3);
 
   return (
     <div style={{ top }} className="fixed inset-x-0 z-50 flex h-[850px] max-h-[calc(100vh-68px)]">

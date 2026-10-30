@@ -11,11 +11,13 @@ export default function ProductCarousel({
   title,
   viewAllHref,
   products,
+  linkImages = true,
 }: {
   eyebrow?: string;
   title: string;
   viewAllHref?: string;
   products: Product[];
+  linkImages?: boolean; // false = card images don't go to another page
 }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [canPrev, setCanPrev] = useState(false);
@@ -107,7 +109,7 @@ export default function ProductCarousel({
         className="no-scrollbar mt-[26px] flex snap-x snap-mandatory gap-[16px] overflow-x-auto px-[16px] scroll-px-[16px] lg:px-[20px] lg:scroll-px-[20px]"
       >
         {products.map((product) => (
-          <ProductCard key={product.id} product={product} />
+          <ProductCard key={product.id} product={product} linkImage={linkImages} />
         ))}
       </div>
     </section>

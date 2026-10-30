@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { Heart, Search, X } from "lucide-react";
-import { products } from "@/data/products";
 import { formatPrice, productToWishlistItem } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth-store";
 import { useWishlistStore } from "@/store/wishlist-store";
@@ -23,28 +22,6 @@ const trendingLinks: TrendingLink[] = [
   { label: "Men Shorts", href: "/men#new-in-shorts" },
   { label: "Socks" },
 ];
-
-// Women's products with a men's product in between (id "5" = Versatile Seamless Tank)
-const popularIds = ["1", "5", "2", "3"];
-const popularProducts = popularIds
-  .map((id) => products.find((p) => p.id === id))
-  .filter((p): p is Product => Boolean(p));
-
-// Everything about a product we want the search to look through, as one lowercase string
-function getSearchText(product: Product): string {
-  return [
-    product.name,
-    product.subtitle,
-    product.description,
-    product.category,
-    product.collection?.replace(/-/g, " "), // "everyday-seamless" → "everyday seamless"
-    product.badge,
-    ...product.colors.map((color) => color.name),
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-}
 
 /* ---------- Small product card ---------- */
 function SearchProductCard({ product, onNavigate }: { product: Product; onNavigate: () => void }) {
@@ -118,6 +95,9 @@ export default function SearchOverlay({
   const [showUnavailable, setShowUnavailable] = useState<string | null>(null);
   const [top, setTop] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [popular, setPopular] = useState<Product[]>([]); // shown before typing
+  const [results, setResults] = useState<Product[]>([]); // shown while searching
+  const [loading, setLoading] = useState(false);
 
   // Clear the text/messages and close
   function close() {
@@ -161,17 +141,41 @@ export default function SearchOverlay({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [open, onClose]);
 
+  // Ask the database. Empty box = popular products, otherwise search (waits 250ms after typing stops)
+  useEffect(() => {
+    if (!open) return;
+    const q = query.trim();
+    const controller = new AbortController();
+
+    const timer = setTimeout(
+      async () => {
+        setLoading(true);
+        try {
+          const res = await fetch(`/api/products/search?q=${encodeURIComponent(q)}`, {
+            signal: controller.signal,
+          });
+          const data: { products: Product[] } = res.ok ? await res.json() : { products: [] };
+          if (q) setResults(data.products);
+          else setPopular(data.products);
+        } catch {
+          // aborted because the person kept typing, or the network failed: nothing to do
+        } finally {
+          if (!controller.signal.aborted) setLoading(false);
+        }
+      },
+      q ? 250 : 0
+    );
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [open, query]);
+
   if (!open) return null;
 
-  // Split the query into words; a product matches if it contains every word
-  const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const isSearching = words.length > 0;
-  const results = isSearching
-    ? products.filter((product) => {
-        const text = getSearchText(product);
-        return words.every((word) => text.includes(word));
-      })
-    : popularProducts;
+  const isSearching = query.trim().length > 0;
+  const shown = isSearching ? results : popular;
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault(); // stop the browser from reloading the page
@@ -267,23 +271,23 @@ export default function SearchOverlay({
           <div className="min-w-0 flex-1">
             <h2 className="text-[20px] font-bold uppercase leading-[24px] text-black">
               {isSearching
-                ? `Results for “${query.trim()}” (${results.length})`
+                ? `Results for “${query.trim()}” (${shown.length})`
                 : "Popular products"}
             </h2>
 
-            {results.length > 0 ? (
+            {shown.length > 0 ? (
               <div
                 className={`mt-[30px] flex gap-[10px] ${
                   isSearching ? "flex-wrap gap-y-[28px]" : "no-scrollbar overflow-x-auto"
                 }`}
               >
-                {results.map((product) => (
+                {shown.map((product) => (
                   <SearchProductCard key={product.id} product={product} onNavigate={close} />
                 ))}
               </div>
             ) : (
               <p className="mt-[30px] text-[16px] text-[#6B6B6B]">
-                No products found. Try a different search.
+                {loading ? "Searching…" : "No products found. Try a different search."}
               </p>
             )}
           </div>

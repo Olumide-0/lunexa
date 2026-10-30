@@ -4,72 +4,8 @@ import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { ChevronRight } from "lucide-react";
 import { slugify } from "@/lib/utils";
+import { shopColumns, type FooterColumn } from "@/data/footer";
 import { useAuthStore } from "@/store/auth-store";
-
-type FooterColumn = {
-  title: string;
-  basePath: string; // where the links point, e.g. "/women" → /women/gym-leggings
-  links: string[];
-};
-
-const shopColumns: FooterColumn[] = [
-  {
-    title: "Women's Leggings",
-    basePath: "/women",
-    links: [
-      "Gym Leggings",
-      "Leggings With Pockets",
-      "High Waisted Leggings",
-      "Scrunch Bum Leggings",
-      "Black Leggings",
-      "Flared Leggings",
-      "Seamless Leggings",
-      "Petite Gym Leggings",
-    ],
-  },
-  {
-    title: "Women's Gymwear",
-    basePath: "/women",
-    links: [
-      "Women’s Gym Wear",
-      "Women gym Shorts",
-      "Running Shorts",
-      "Sport Bras",
-      "High Impact Sport Bras",
-      "Black Sports Bras",
-      "Matching Sets",
-      "Lounge Wear",
-    ],
-  },
-  {
-    title: "Men's Gymwear",
-    basePath: "/men",
-    links: [
-      "Men’s Gym Wear",
-      "Men Gym shorts",
-      "Shorts with Pockets",
-      "Men’s Running Shorts",
-      "Gym Shirts",
-      "Sleeveless T-Shirts",
-      "Gym Stringers",
-      "Men’s Baselayers",
-    ],
-  },
-  {
-    title: "Accessories",
-    basePath: "/accessories",
-    links: [
-      "Women’s Underwear",
-      "Men’s Underwear",
-      "Workout Bags",
-      "Duffel Bags",
-      "Gym Socks",
-      "Crew Socks",
-      "Caps",
-      "Beanies",
-    ],
-  },
-];
 
 const infoColumns: FooterColumn[] = [
   {

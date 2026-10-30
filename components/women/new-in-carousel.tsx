@@ -4,15 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Heart } from "lucide-react";
-import { products } from "@/data/products";
 import { formatPrice, productToWishlistItem } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth-store";
 import { useCartStore } from "@/store/cart-store";
 import { useWishlistStore } from "@/store/wishlist-store";
 import type { Product } from "@/types";
-
-// Only the Lift Seamless 2.0 products
-const newInProducts = products.filter((p) => p.collection === "lift-seamless-2");
 
 /* ---------- Card for this section ---------- */
 function NewInCard({ product }: { product: Product }) {
@@ -108,7 +104,7 @@ function NewInCard({ product }: { product: Product }) {
 }
 
 /* ---------- Section ---------- */
-export default function NewInCarousel() {
+export default function NewInCarousel({ products }: { products: Product[] }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(false);
@@ -181,7 +177,7 @@ export default function NewInCarousel() {
         ref={trackRef}
         className="no-scrollbar mt-[26px] flex snap-x snap-mandatory gap-[16px] overflow-x-auto px-[16px] scroll-px-[16px] lg:px-[20px] lg:scroll-px-[20px]"
       >
-        {newInProducts.map((product) => (
+        {products.map((product) => (
           <NewInCard key={product.id} product={product} />
         ))}
       </div>

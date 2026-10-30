@@ -6,15 +6,20 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed:products": "tsx --env-file=.env.local scripts/seed-products.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.2",
+    "bcryptjs": "^3.0.3",
+    "jose": "^6.2.14",
     "lucide-react": "^1.61.0",
+    "mongoose": "^9.11.4",
     "next": "16.4.2",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-hook-form": "^7.91.0",
+    "resend": "^6.35.0",
     "zod": "^4.6.7",
     "zustand": "^5.0.16"
   },
@@ -26,6 +31,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.2",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   }
 }

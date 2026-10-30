@@ -8,23 +8,32 @@ import RestockBanner from "@/components/women/restock-banner";
 import TopBestsellers from "@/components/women/top-bestsellers";
 import WhiteSimmonsCarousel from "@/components/women/white-simmons-carousel";
 import WomensFavorites from "@/components/women/womens-favorites";
+import { getCollectionProducts } from "@/lib/products";
 
 export const metadata: Metadata = {
   title: "Women | Lunexa",
   description: "Shop women’s gym wear, leggings, sports bras and more.",
 };
 
-export default function WomenPage() {
+export default async function WomenPage() {
+  // One list per carousel, from MongoDB
+  const [newIn, whiteSimmons, everydaySeamless, bestsellers] = await Promise.all([
+    getCollectionProducts("lift-seamless-2"),
+    getCollectionProducts("white-simmons"),
+    getCollectionProducts("everyday-seamless"),
+    getCollectionProducts("women-bestsellers"),
+  ]);
+
   return (
     <>
       <WomenHero />
-      <NewInCarousel />
+      <NewInCarousel products={newIn} />
       <RestockBanner />
-      <WhiteSimmonsCarousel />
-      <EverydaySeamlessCarousel />
+      <WhiteSimmonsCarousel products={whiteSimmons} />
+      <EverydaySeamlessCarousel products={everydaySeamless} />
       <WomensFavorites />
       <HotRightNow />
-      <TopBestsellers />
+      <TopBestsellers products={bestsellers} />
       <WomenHowDoYouTrain />
     </>
   );

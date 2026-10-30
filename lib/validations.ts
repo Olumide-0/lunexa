@@ -29,16 +29,39 @@ export const registerSchema = z.object({
 });
 
 /* ---------- Log in ---------- */
-// Backend phase: switch this back to a simple "required" check and let the
-// server verify the password, so older accounts can still log in.
+// Only "required" here: the SERVER checks if the password is correct.
 export const loginSchema = z.object({
   email: emailRule,
+  password: z.string().min(1, "Password is required"),
+});
+
+/* ---------- Forgot password (email only) ---------- */
+export const forgotPasswordSchema = z.object({
+  email: emailRule,
+});
+
+/* ---------- Reset password form (new password typed twice) ---------- */
+export const resetPasswordSchema = z
+  .object({
+    password: strongPassword,
+    confirmPassword: z.string().min(1, "Please confirm your password"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"], // show the error under the confirm box
+  });
+
+/* ---------- What the reset form sends to the server ---------- */
+export const resetPasswordRequestSchema = z.object({
+  token: z.string().min(1, "This reset link is invalid"),
   password: strongPassword,
 });
 
 /* ---------- TypeScript types, created from the schemas ---------- */
 export type RegisterValues = z.infer<typeof registerSchema>;
 export type LoginValues = z.infer<typeof loginSchema>;
+export type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordValues = z.infer<typeof resetPasswordSchema>;
 
 /* ---------- Helper: turn react-hook-form errors into { field: message } for logging ---------- */
 export function getErrorMessages(errors: FieldErrors) {

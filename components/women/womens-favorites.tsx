@@ -84,7 +84,7 @@ function FavoriteCard({ item }: { item: Favorite }) {
     title: item.title,
     subtitle: "Women",
     image: item.image,
-    href: item.href,
+    href: `/products/women-favorite-${item.id}`,
   };
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const isSaved = useWishlistStore((state) =>
@@ -116,6 +116,8 @@ function FavoriteCard({ item }: { item: Favorite }) {
           sizes="(min-width: 640px) 446px, 80vw"
           className="object-cover"
         />
+        {/* Clicking the image opens this product's page (the heart and sizes sit on top of it) */}
+        <Link href={`/products/${product.slug}`} aria-label={item.title} className="absolute inset-0" />
         <button
           type="button"
           aria-label={showFilled ? "Remove from wishlist" : "Save to wishlist"}

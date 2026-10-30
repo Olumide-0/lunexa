@@ -234,7 +234,7 @@ export default function PopularRightNow() {
             title: item.title,
             subtitle: audience === "women" ? "Women" : "Men",
             image: item.image,
-            href: item.href,
+            href: `/products/popular-${audience}-${item.id}`,
           };
           const showFilled =
             isLoggedIn && savedItems.some((saved) => saved.id === wishlistItem.id);
@@ -250,6 +250,8 @@ export default function PopularRightNow() {
                   sizes="(min-width: 640px) 446px, 80vw"
                   className="object-cover"
                 />
+                {/* Clicking the image opens this product's page (the heart and sizes sit on top of it) */}
+                <Link href={`/products/${product.slug}`} aria-label={item.title} className="absolute inset-0" />
                 <button
                   type="button"
                   aria-label={showFilled ? "Remove from wishlist" : "Save to wishlist"}

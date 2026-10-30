@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronDown, Heart, MoreHorizontal, ShoppingBag, Trash2 } from "lucide-react";
-import { products } from "@/data/products";
 import { formatPrice } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth-store";
 import { useCartStore } from "@/store/cart-store";
@@ -37,9 +36,6 @@ const emptyFilters: Record<FilterKey, string[]> = {
   color: [],
   price: [],
 };
-
-// Saved products have ids like "product-5", so we can look up their full details
-const productByWishlistId = new Map(products.map((p) => [`product-${p.id}`, p]));
 
 const unique = (values: string[]) => Array.from(new Set(values));
 const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
@@ -308,8 +304,33 @@ export default function WishlistView() {
   const [filters, setFilters] = useState<Record<FilterKey, string[]>>(emptyFilters);
   const [openSections, setOpenSections] = useState<string[]>(["sort"]);
 
+  // Saved ids look like "product-<database id>". Load those products' full details from the database.
+  const productIdsKey = items
+    .filter((item) => item.id.startsWith("product-"))
+    .map((item) => item.id.slice("product-".length))
+    .join(",");
+  const [productById, setProductById] = useState<Map<string, Product>>(new Map());
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!isLoggedIn || !productIdsKey) return;
+    const controller = new AbortController();
+    fetch(`/api/products/lookup?ids=${productIdsKey}`, { signal: controller.signal })
+      .then((res) => (res.ok ? res.json() : { products: [] }))
+      .then((data: { products: Product[] }) => {
+        setProductById(new Map(data.products.map((p) => [`product-${p.id}`, p])));
+        setLoaded(true);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setLoaded(true);
+      });
+    return () => controller.abort();
+  }, [isLoggedIn, productIdsKey]);
+
+  const ready = !isLoggedIn || !productIdsKey || loaded;
+
   // Blank space while saved data loads (avoids a flash of the wrong content)
-  if (!hydrated) return <div className="min-h-[60vh]" />;
+  if (!hydrated || !ready) return <div className="min-h-[60vh]" />;
 
   /* ----- Signed out ----- */
   if (!isLoggedIn) {
@@ -346,7 +367,7 @@ export default function WishlistView() {
   const rows = items.map((item, index) => ({
     item,
     index, // order saved (used for Relevancy / Newest)
-    product: productByWishlistId.get(item.id),
+    product: productById.get(item.id),
   }));
 
   const savedProducts = rows
