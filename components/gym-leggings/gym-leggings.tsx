@@ -1,26 +1,22 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ChevronDown, Heart, SlidersHorizontal, X } from "lucide-react";
 import {
   filterOptions,
-  leggingsProducts,
   sortOptions,
   type FilterKey,
-  type LeggingsProduct,
   type SortValue,
-} from "@/data/leggings";
+} from "@/lib/listing-options";
+import type { ListingProduct } from "@/lib/products";
 import { formatPrice, productToWishlistItem } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth-store";
 import { useCartStore } from "@/store/cart-store";
 import { useWishlistStore } from "@/store/wishlist-store";
 
 const PAGE_SIZE = 28; // 7 rows of 4, like the design
-
-// Mock data: uses the same leggings list for now.
-// When the backend is ready, this will be only the gym leggings.
-const gymLeggingsProducts = leggingsProducts;
 
 // Sizes shown in the hover panel on each card
 const cardSizes = ["XXS", "XS", "S", "M", "L", "XL", "XXL"];
@@ -51,12 +47,12 @@ const emptyFilters: SelectedFilters = {
 };
 
 /* ---------- Does a product match one option of a section? ---------- */
-function matchesOption(product: LeggingsProduct, key: FilterKey, option: string): boolean {
+function matchesOption(product: ListingProduct, key: FilterKey, option: string): boolean {
   switch (key) {
     case "size":
       return product.sizes.includes(option);
     case "features":
-      return product.features.includes(option);
+      return (product.features ?? []).includes(option);
     case "fit":
       return product.fit === option;
     case "collections":
@@ -121,7 +117,7 @@ function SidebarSection({ title, children }: { title: string; children: React.Re
 }
 
 /* ---------- Product card ---------- */
-function GymLeggingsCard({ product }: { product: LeggingsProduct }) {
+function GymLeggingsCard({ product }: { product: ListingProduct }) {
   const wishlistItem = productToWishlistItem(product);
   const isLoggedIn = useAuthStore((state) => state.isLoggedIn);
   const isSaved = useWishlistStore((state) =>
@@ -152,6 +148,12 @@ function GymLeggingsCard({ product }: { product: LeggingsProduct }) {
           sizes="(min-width: 1024px) 245px, (min-width: 768px) 33vw, 50vw"
           className="scale-100 object-cover transition-transform duration-500 ease-out group-hover:scale-110"
         />
+        {/* Clicking the image opens the product page (the heart and sizes sit on top of it) */}
+        <Link
+          href={`/products/${product.slug}`}
+          aria-label={`${product.name} - ${product.subtitle}`}
+          className="absolute inset-0"
+        />
         <button
           type="button"
           aria-label={showFilled ? "Remove from wishlist" : "Save to wishlist"}
@@ -162,7 +164,7 @@ function GymLeggingsCard({ product }: { product: LeggingsProduct }) {
           <Heart strokeWidth={1.5} className={`size-[11px] text-black ${showFilled ? "fill-black" : ""}`} />
         </button>
         {product.badge && (
-          <span className="absolute bottom-[12px] left-[10px] bg-white px-[6px] py-[3px] text-[11px] font-bold uppercase leading-[14px] text-black transition-opacity duration-300 group-focus-within:opacity-0 group-hover:opacity-0">
+          <span className="pointer-events-none absolute bottom-[12px] left-[10px] bg-white px-[6px] py-[3px] text-[11px] font-bold uppercase leading-[14px] text-black transition-opacity duration-300 group-focus-within:opacity-0 group-hover:opacity-0">
             {product.badge}
           </span>
         )}
@@ -184,7 +186,11 @@ function GymLeggingsCard({ product }: { product: LeggingsProduct }) {
           </div>
         </div>
       </div>
-      <h3 className="mt-[10px] text-[14px] leading-[20px] text-black">{product.name}</h3>
+      <h3 className="mt-[10px] text-[14px] leading-[20px] text-black">
+        <Link href={`/products/${product.slug}`} className="hover:underline">
+          {product.name}
+        </Link>
+      </h3>
       <p className="mt-[2px] text-[12px] leading-[16px] text-[#6B6B6B]">{product.subtitle}</p>
       <p className="mt-[4px] flex items-center gap-[6px] text-[13px] font-bold leading-[18px] text-black">
         {formatPrice(product.price)}
@@ -199,7 +205,7 @@ function GymLeggingsCard({ product }: { product: LeggingsProduct }) {
 }
 
 /* ---------- Gym Leggings listing: sidebar + grid + load more ---------- */
-export default function GymLeggings() {
+export default function GymLeggings({ products }: { products: ListingProduct[] }) {
   const [sort, setSort] = useState<SortValue>("relevancy");
   const [selected, setSelected] = useState<SelectedFilters>(emptyFilters);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -209,7 +215,7 @@ export default function GymLeggings() {
   //    (e.g. Black OR Blue, AND size XS)
   // 2. Sort the result
   const results = useMemo(() => {
-    const filtered = gymLeggingsProducts.filter((product) =>
+    const filtered = products.filter((product) =>
       filterSections.every(({ key }) => {
         const chosen = selected[key];
         return chosen.length === 0 || chosen.some((option) => matchesOption(product, key, option));
@@ -221,7 +227,7 @@ export default function GymLeggings() {
     if (sort === "price-desc") sorted.sort((a, b) => b.price - a.price);
     if (sort === "newest") sorted.reverse(); // higher number = added later
     return sorted;
-  }, [selected, sort]);
+  }, [products, selected, sort]);
 
   const visibleProducts = results.slice(0, visibleCount);
   const hasActiveFilters = Object.values(selected).some((list) => list.length > 0);

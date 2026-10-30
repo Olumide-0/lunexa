@@ -5,6 +5,7 @@ import CategoryHero from "@/components/category/category-hero";
 import CategoryListing from "@/components/category/category-listing";
 import { shopColumns } from "@/data/footer";
 import { navMenus } from "@/data/navigation";
+import { getSubcategoryProducts } from "@/lib/products";
 import { slugify } from "@/lib/utils";
 
 // These already have their own page files, so this template skips them
@@ -71,10 +72,13 @@ async function SubcategoryContent({ params }: Props) {
   const page = getWomenPages()[subcategory];
   if (!page) notFound();
 
+  // The women's listing products, from MongoDB
+  const products = await getSubcategoryProducts("leggings");
+
   return (
     <>
       <CategoryHero title={page.title} />
-      <CategoryListing group={page.group} />
+      <CategoryListing group={page.group} products={products} />
     </>
   );
 }

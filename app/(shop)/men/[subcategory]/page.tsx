@@ -5,6 +5,7 @@ import CategoryHero from "@/components/category/category-hero";
 import CategoryListing from "@/components/category/category-listing";
 import { shopColumns } from "@/data/footer";
 import { navMenus } from "@/data/navigation";
+import { getSubcategoryProducts } from "@/lib/products";
 import { slugify } from "@/lib/utils";
 
 type PageInfo = {
@@ -67,10 +68,13 @@ async function SubcategoryContent({ params }: Props) {
   const page = getMenPages()[subcategory];
   if (!page) notFound();
 
+  // The men's listing products, from MongoDB
+  const products = await getSubcategoryProducts("men-listing");
+
   return (
     <>
       <CategoryHero title={page.title} audience="Men" />
-      <CategoryListing group={page.group} audience="Men" />
+      <CategoryListing group={page.group} audience="Men" products={products} />
     </>
   );
 }

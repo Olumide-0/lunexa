@@ -6,13 +6,15 @@ import PopularRightNow from "@/components/home/popular-right-now";
 import ProductCarousel from "@/components/home/product-carousel";
 import PromoBanner from "@/components/home/promo-banner";
 import { looks } from "@/data/looks";
-import { products } from "@/data/products";
+import { getCollectionProducts } from "@/lib/products";
 
-// Products for the two homepage carousels
-const whiteSimmonsProducts = products.filter((p) => p.collection === "white-simmons");
-const workoutShirtProducts = products.filter((p) => p.collection === "workout-shirts");
+export default async function HomePage() {
+  // Products for the two homepage carousels, from MongoDB
+  const [whiteSimmonsProducts, workoutShirtProducts] = await Promise.all([
+    getCollectionProducts("white-simmons"),
+    getCollectionProducts("workout-shirts"),
+  ]);
 
-export default function HomePage() {
   return (
     <>
       <Hero />

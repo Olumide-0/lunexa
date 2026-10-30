@@ -15,6 +15,10 @@ const userSchema = new Schema(
     // The HASHED password, never the real one.
     // select: false = left out of query results unless we ask for it on purpose.
     passwordHash: { type: String, required: true, select: false },
+
+    // Forgot password: a SCRAMBLED copy of the one-time token + when it stops working
+    resetPasswordTokenHash: { type: String, select: false },
+    resetPasswordExpires: { type: Date, select: false },
   },
   { timestamps: true } // adds createdAt and updatedAt automatically
 );

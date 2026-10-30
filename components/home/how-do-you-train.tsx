@@ -178,6 +178,8 @@ export default function HowDoYouTrain() {
                   sizes="(min-width: 640px) 446px, 80vw"
                   className="object-cover"
                 />
+                {/* Clicking the image opens this product's page (the heart and sizes sit on top of it) */}
+                <Link href={`/products/${product.slug}`} aria-label={item.title} className="absolute inset-0" />
 
                 {/* Hover: size panel slides up. Clicking a size adds it to the bag. */}
                 <div className="absolute inset-x-0 bottom-0 translate-y-full bg-[#F2F2F2]/60 px-[22px] py-[24px] opacity-0 transition-all duration-300 ease-out group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:translate-y-0 group-hover:opacity-100">

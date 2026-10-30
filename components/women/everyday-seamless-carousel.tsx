@@ -4,17 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Heart } from "lucide-react";
-import { products } from "@/data/products";
 import { formatPrice, productToWishlistItem } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth-store";
 import { useCartStore } from "@/store/cart-store";
 import { useWishlistStore } from "@/store/wishlist-store";
 import type { Product } from "@/types";
-
-// Only the Everyday Seamless products
-const everydaySeamlessProducts = products.filter(
-  (p) => p.collection === "everyday-seamless"
-);
 
 /* ---------- Card for this section ---------- */
 function EverydaySeamlessCard({ product }: { product: Product }) {
@@ -110,7 +104,7 @@ function EverydaySeamlessCard({ product }: { product: Product }) {
 }
 
 /* ---------- Section ---------- */
-export default function EverydaySeamlessCarousel() {
+export default function EverydaySeamlessCarousel({ products }: { products: Product[] }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(false);
@@ -191,7 +185,7 @@ export default function EverydaySeamlessCarousel() {
         ref={trackRef}
         className="no-scrollbar mt-[26px] flex snap-x snap-mandatory gap-[16px] overflow-x-auto px-[16px] scroll-px-[16px] lg:px-[20px] lg:scroll-px-[20px]"
       >
-        {everydaySeamlessProducts.map((product) => (
+        {products.map((product) => (
           <EverydaySeamlessCard key={product.id} product={product} />
         ))}
       </div>

@@ -4,15 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Heart } from "lucide-react";
-import { products } from "@/data/products";
 import { formatPrice, productToWishlistItem } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth-store";
 import { useCartStore } from "@/store/cart-store";
 import { useWishlistStore } from "@/store/wishlist-store";
 import type { Product } from "@/types";
-
-// Only the men's shorts products
-const shortsProducts = products.filter((p) => p.collection === "men-shorts");
 
 /* ---------- Card for this section ---------- */
 function ShortsCard({ product }: { product: Product }) {
@@ -108,7 +104,7 @@ function ShortsCard({ product }: { product: Product }) {
 }
 
 /* ---------- Section ---------- */
-export default function NewInShorts() {
+export default function NewInShorts({ products }: { products: Product[] }) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(false);
@@ -181,7 +177,7 @@ export default function NewInShorts() {
         ref={trackRef}
         className="no-scrollbar mt-[26px] flex snap-x snap-mandatory gap-[16px] overflow-x-auto px-[16px] scroll-px-[16px] lg:px-[20px] lg:scroll-px-[20px]"
       >
-        {shortsProducts.map((product) => (
+        {products.map((product) => (
           <ShortsCard key={product.id} product={product} />
         ))}
       </div>
