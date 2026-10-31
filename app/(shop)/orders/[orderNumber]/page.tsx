@@ -90,7 +90,7 @@ async function OrderContent({ params }: Props) {
       </div>
 
       {/* Once paid, the bag is emptied */}
-      {order.status === "paid" && <ClearCart />}
+      {order.status === "paid" && <ClearCart productIds={order.items.map((item) => String(item.product))} />}
 
       <div className="mx-auto mt-[40px] grid max-w-[900px] gap-[32px] md:grid-cols-[minmax(0,1fr)_300px]">
         <section>

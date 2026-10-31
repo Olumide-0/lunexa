@@ -8,6 +8,7 @@ import { ChevronDown, Heart, LogOut, Menu, Package, Search, ShoppingBag, User, X
 import MegaMenu from "@/components/layout/mega-menu";
 import SearchOverlay from "@/components/layout/search-overlay";
 import { WishlistPanel } from "@/components/layout/wishlist-modal";
+import ThemeToggle from "@/components/theme/theme-toggle";
 import { navMenus } from "@/data/navigation";
 import { useAuthStore } from "@/store/auth-store";
 import { selectCartCount, useCartStore } from "@/store/cart-store";
@@ -140,12 +141,12 @@ export default function Navbar() {
             )}
           </button>
           <Link href="/" aria-label="Lunexa home" className="hidden lg:block">
-            <Image src={logo} alt="Lunexa" priority className="h-auto w-[106px]" />
+            <Image src={logo} alt="Lunexa" priority className="h-auto w-[106px] dark:invert" />
           </Link>
         </div>
 
         {/* Center: nav links with mega menu (desktop) */}
-        <nav className="hidden h-full items-center gap-[51px] self-stretch lg:flex">
+        <nav className="hidden h-full items-center gap-[32px] self-stretch lg:flex xl:gap-[51px]">
           {navMenus.map((menu) => {
             const isActive = activeMenu === menu.label;
             return (
@@ -173,20 +174,20 @@ export default function Navbar() {
 
         {/* Center: logo (mobile) */}
         <Link href="/" aria-label="Lunexa home" className="lg:hidden">
-          <Image src={logo} alt="Lunexa" priority className="h-[32px] w-auto" />
+          <Image src={logo} alt="Lunexa" priority className="h-[32px] w-auto dark:invert" />
         </Link>
 
         {/* Right: search + icons */}
-        <div className="flex items-center justify-end gap-[16px] lg:gap-[24px]">
+        <div className="flex items-center justify-end gap-[16px] xl:gap-[24px]">
           {/* Search trigger (desktop) — opens the search overlay */}
           <button
             type="button"
             onClick={() => setSearchOpen(true)}
             aria-label="Search products"
-            className="hidden h-[46px] w-[232px] shrink-0 items-center gap-[12px] bg-[#D4D4D4] px-[14px] text-left lg:flex"
+            className="hidden h-[46px] w-[46px] shrink-0 items-center justify-center gap-[12px] bg-[#D4D4D4] text-left lg:flex xl:w-[160px] xl:justify-start xl:px-[14px] 2xl:w-[232px]"
           >
             <Search strokeWidth={1.75} className="size-[20px] shrink-0 text-black" />
-            <span className="truncate text-[15px] leading-[20px] text-[#6B6B6B]">
+            <span className="hidden truncate text-[15px] leading-[20px] text-[#6B6B6B] xl:block">
               What are you looking for today?
             </span>
           </button>
@@ -200,6 +201,11 @@ export default function Navbar() {
           >
             <Search strokeWidth={1.5} className="size-[20px]" />
           </button>
+
+          {/* Light / dark mode (desktop; on mobile it is inside the menu) */}
+          <div className="hidden sm:block">
+            <ThemeToggle />
+          </div>
 
           {/* Wishlist */}
           {signedIn ? (
@@ -355,6 +361,12 @@ export default function Navbar() {
             >
               {signedIn ? "Log out" : "Log in"}
             </button>
+
+            {/* Light / dark mode */}
+            <div className="border-t border-[#D4D4D4] pt-[16px]">
+              <p className="mb-[10px] text-[13px] uppercase leading-[18px] text-[#6B6B6B]">Appearance</p>
+              <ThemeToggle variant="inline" />
+            </div>
           </nav>
         </div>
       )}
