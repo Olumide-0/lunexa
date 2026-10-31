@@ -524,7 +524,7 @@ export default function AuthModal() {
         </button>
 
         <div className="flex justify-center">
-          <Image src={logo} alt="Lunexa" className="h-[40px] w-auto" />
+          <Image src={logo} alt="Lunexa" className="h-[40px] w-auto dark:invert" />
         </div>
 
         {/* key makes React build a fresh form when switching, so old errors don't carry over */}

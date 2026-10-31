@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ChevronDown, Heart, SlidersHorizontal, X } from "lucide-react";
 import {
   filterOptions,
@@ -10,6 +10,7 @@ import {
   type FilterKey,
   type SortValue,
 } from "@/lib/listing-options";
+import Pagination from "@/components/ui/pagination";
 import type { ListingProduct } from "@/lib/products";
 import { formatPrice, productToWishlistItem } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth-store";
@@ -205,11 +206,12 @@ function LeggingsCard({ product }: { product: ListingProduct }) {
   );
 }
 
-/* ---------- The whole listing: sidebar + grid + load more ---------- */
+/* ---------- The whole listing: sidebar + grid + pagination ---------- */
 export default function AllLeggings({ products }: { products: ListingProduct[] }) {
   const [sort, setSort] = useState<SortValue>("relevancy");
   const [selected, setSelected] = useState<SelectedFilters>(emptyFilters);
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [page, setPage] = useState(1);
+  const gridTop = useRef<HTMLDivElement>(null);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   // 1. Filter: OR inside a section, AND between sections
@@ -230,7 +232,10 @@ export default function AllLeggings({ products }: { products: ListingProduct[] }
     return sorted;
   }, [products, selected, sort]);
 
-  const visibleProducts = results.slice(0, visibleCount);
+  const totalPages = Math.max(1, Math.ceil(results.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const firstIndex = (currentPage - 1) * PAGE_SIZE;
+  const visibleProducts = results.slice(firstIndex, firstIndex + PAGE_SIZE);
   const hasActiveFilters = Object.values(selected).some((list) => list.length > 0);
 
   function toggleOption(key: FilterKey, option: string) {
@@ -240,13 +245,19 @@ export default function AllLeggings({ products }: { products: ListingProduct[] }
         ? current[key].filter((value) => value !== option)
         : [...current[key], option],
     }));
-    setVisibleCount(PAGE_SIZE); // start from the first page again
+    setPage(1); // start from the first page again
+  }
+
+  // Change page and bring the top of the grid back into view
+  function goToPage(next: number) {
+    setPage(next);
+    gridTop.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function clearAll() {
     setSelected(emptyFilters);
     setSort("relevancy");
-    setVisibleCount(PAGE_SIZE);
+    setPage(1);
   }
 
   return (
@@ -301,7 +312,7 @@ export default function AllLeggings({ products }: { products: ListingProduct[] }
                 checked={sort === option.value}
                 onChange={() => {
                   setSort(option.value);
-                  setVisibleCount(PAGE_SIZE);
+                  setPage(1);
                 }}
               />
             ))}
@@ -324,7 +335,7 @@ export default function AllLeggings({ products }: { products: ListingProduct[] }
         </aside>
 
         {/* Product grid */}
-        <div className="min-w-0 flex-1">
+        <div ref={gridTop} className="min-w-0 flex-1 scroll-mt-[120px]">
           {results.length === 0 ? (
             <div className="flex flex-col items-center py-[80px] text-center">
               <p className="text-[18px] font-bold uppercase text-black">No products found</p>
@@ -347,28 +358,11 @@ export default function AllLeggings({ products }: { products: ListingProduct[] }
                 ))}
               </div>
 
-              {/* Load more */}
-              <div className="mt-[80px] flex flex-col items-center">
-                {visibleCount < results.length && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setVisibleCount((count) => count + PAGE_SIZE)}
-                      className="h-[48px] rounded-full bg-black px-[28px] text-[15px] font-semibold text-white transition-colors hover:bg-[#333333]"
-                    >
-                      Load More
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setVisibleCount(results.length)}
-                      className="mt-[12px] text-[12px] text-[#6B6B6B] underline underline-offset-[2px] hover:text-black"
-                    >
-                      View All
-                    </button>
-                  </>
-                )}
-                <p className="mt-[16px] text-[13px] leading-[18px] text-black">
-                  Viewing 1 - {visibleProducts.length} of {results.length} products
+              {/* Pagination */}
+              <div className="mt-[60px] flex flex-col items-center gap-[16px]">
+                <Pagination page={currentPage} totalPages={totalPages} onChange={goToPage} />
+                <p className="text-[13px] leading-[18px] text-black">
+                  Viewing {firstIndex + 1} - {firstIndex + visibleProducts.length} of {results.length} products
                 </p>
               </div>
             </>

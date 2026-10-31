@@ -2,20 +2,36 @@
 
 import { useEffect } from "react";
 import { useCartStore } from "@/store/cart-store";
+import { useWishlistStore } from "@/store/wishlist-store";
 
-// Empties the bag once an order is paid. It waits until the saved bag has loaded
-// from the browser, otherwise the saved items would come back afterwards.
-export default function ClearCart() {
+// Runs once an order is paid:
+// 1. empties the bag
+// 2. removes the products that were just bought from the wishlist
+// It waits until the saved bag and wishlist have loaded from the browser,
+// otherwise the saved items would come back afterwards.
+export default function ClearCart({ productIds }: { productIds: string[] }) {
+  const key = productIds.join(",");
+
   useEffect(() => {
-    function clear() {
+    // Wishlist ids look like "product-<database id>"
+    const bought = new Set(key.split(",").filter(Boolean).map((id) => `product-${id}`));
+
+    function clean() {
+      if (!useCartStore.persist.hasHydrated() || !useWishlistStore.persist.hasHydrated()) return;
       useCartStore.setState({ items: [] });
+      useWishlistStore.setState((state) => ({
+        items: state.items.filter((item) => !bought.has(item.id)),
+      }));
     }
-    if (useCartStore.persist.hasHydrated()) {
-      clear();
-      return;
-    }
-    return useCartStore.persist.onFinishHydration(clear);
-  }, []);
+
+    clean();
+    const stopCart = useCartStore.persist.onFinishHydration(clean);
+    const stopWishlist = useWishlistStore.persist.onFinishHydration(clean);
+    return () => {
+      stopCart();
+      stopWishlist();
+    };
+  }, [key]);
 
   return null;
 }
