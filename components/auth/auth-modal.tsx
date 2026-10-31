@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useForm, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { X } from "lucide-react";
-import { AuthInput, PasswordInput } from "@/components/auth/auth-fields";
+import { AuthInput, DateInput, PasswordInput } from "@/components/auth/auth-fields";
 import {
   forgotPasswordSchema,
   getErrorMessages,
@@ -176,9 +176,6 @@ function RegisterForm() {
     console.log("❌ Sign up form errors:", getErrorMessages(formErrors));
   }
 
-  // Date of Birth shows a placeholder until focused, then becomes a date picker
-  const dateOfBirthField = register("dateOfBirth");
-
   return (
     <div className="text-center">
       <h2 className="mt-[32px] text-[20px] font-medium uppercase leading-[26px] text-black">
@@ -205,18 +202,10 @@ function RegisterForm() {
           autoComplete="family-name"
           error={errors.lastName?.message}
         />
-        <AuthInput
-          {...dateOfBirthField}
-          type="text"
+        <DateInput
+          {...register("dateOfBirth")}
           placeholder="Date of Birth"
           autoComplete="bday"
-          onFocus={(e) => {
-            e.target.type = "date";
-          }}
-          onBlur={(e) => {
-            if (!e.target.value) e.target.type = "text";
-            dateOfBirthField.onBlur(e); // keep react-hook-form's own blur handling
-          }}
           error={errors.dateOfBirth?.message}
         />
         <AuthInput
