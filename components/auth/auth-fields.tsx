@@ -26,6 +26,49 @@ export function AuthInput({ error, ...props }: InputProps) {
   );
 }
 
+// A real date input (so phones open their own calendar), with the "Date of Birth"
+// label drawn over it while it is empty, so it looks like the other fields.
+export function DateInput({ error, placeholder, onChange, onFocus, onBlur, ...props }: InputProps) {
+  const [filled, setFilled] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const showPlaceholder = !filled && !focused;
+
+  return (
+    <div>
+      <div className="relative">
+        <input
+          {...props}
+          type="date"
+          aria-label={placeholder}
+          aria-invalid={!!error}
+          onChange={(e) => {
+            setFilled(!!e.target.value);
+            onChange?.(e);
+          }}
+          onFocus={(e) => {
+            setFocused(true);
+            onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setFocused(false);
+            setFilled(!!e.target.value);
+            onBlur?.(e);
+          }}
+          className={`${inputBase.replace("text-black", "")} min-w-0 appearance-none text-left ${
+            showPlaceholder ? "text-transparent" : "text-black"
+          } ${borderClass(error)}`}
+        />
+        {showPlaceholder && (
+          <span className="pointer-events-none absolute inset-y-0 left-[14px] flex items-center text-[15px] text-[#737373]">
+            {placeholder}
+          </span>
+        )}
+      </div>
+      <ErrorText error={error} />
+    </div>
+  );
+}
+
 export function PasswordInput({ error, ...props }: InputProps) {
   const [visible, setVisible] = useState(false);
 
