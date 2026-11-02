@@ -17,6 +17,7 @@ const infoColumns: FooterColumn[] = [
       "Returns Policy",
       "Make A Return",
       "Orders",
+      "Track Order",
       "Submit a Fake",
     ],
   },
@@ -48,6 +49,11 @@ const authLinks: Record<string, "login" | "register"> = {
   Register: "register",
 };
 
+// Links that go to a real page instead of "<basePath>/<link name>"
+const linkHrefs: Record<string, string> = {
+  "Track Order": "/track-order",
+};
+
 const linkClass =
   "text-[17px] leading-[22px] text-[#D4D4D4] transition-colors hover:text-white";
 
@@ -73,7 +79,7 @@ function FooterLinks({ column }: { column: FooterColumn }) {
                   {link}
                 </button>
               ) : (
-                <Link href={`${column.basePath}/${slugify(link)}`} className={linkClass}>
+                <Link href={linkHrefs[link] ?? `${column.basePath}/${slugify(link)}`} className={linkClass}>
                   {link}
                 </Link>
               )}

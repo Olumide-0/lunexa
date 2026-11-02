@@ -138,7 +138,15 @@ async function OrderContent({ params }: Props) {
         </aside>
       </div>
 
-      <div className="mt-[40px] flex justify-center">
+      <div className="mt-[40px] flex flex-wrap justify-center gap-[12px]">
+        {(order.status === "paid" || order.status === "shipped" || order.status === "delivered") && (
+          <Link
+            href={`/track-order?order=${order.orderNumber}`}
+            className="flex h-[48px] items-center rounded-full bg-[#E5E5E5] px-[32px] text-[15px] font-semibold text-black transition-colors hover:bg-[#D4D4D4]"
+          >
+            Track order
+          </Link>
+        )}
         <Link href="/" className="flex h-[48px] items-center rounded-full bg-black px-[32px] text-[15px] font-semibold text-white transition-colors hover:bg-[#333333]">
           Continue shopping
         </Link>

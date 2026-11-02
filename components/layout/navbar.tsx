@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, Heart, LogOut, Menu, Package, Search, ShoppingBag, User, X } from "lucide-react";
+import { ChevronDown, Heart, LogOut, Menu, Package, Search, ShoppingBag, Truck, User, X } from "lucide-react";
 import MegaMenu from "@/components/layout/mega-menu";
 import SearchOverlay from "@/components/layout/search-overlay";
 import { WishlistPanel } from "@/components/layout/wishlist-modal";
@@ -265,6 +265,15 @@ export default function Navbar() {
                     <Package strokeWidth={1.5} className="size-[16px]" />
                     My orders
                   </Link>
+                  <Link
+                    href="/track-order"
+                    role="menuitem"
+                    onClick={() => setAccountOpen(false)}
+                    className="flex w-full items-center gap-[10px] px-[16px] py-[10px] text-[14px] text-black hover:bg-[#F2F2F2]"
+                  >
+                    <Truck strokeWidth={1.5} className="size-[16px]" />
+                    Track order
+                  </Link>
                   <button
                     type="button"
                     role="menuitem"
@@ -354,6 +363,13 @@ export default function Navbar() {
                 My orders
               </Link>
             )}
+            <Link
+              href="/track-order"
+              onClick={() => setMobileOpen(false)}
+              className="border-b border-[#D4D4D4] py-[14px] text-left text-[16px] font-bold uppercase"
+            >
+              Track order
+            </Link>
             <button
               type="button"
               onClick={signedIn ? handleLogout : handleLogin}
