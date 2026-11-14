@@ -35,7 +35,7 @@ function emailLayout({ preheader, content }: { preheader: string; content: strin
         <td align="center" style="padding:32px 16px;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#FFFFFF;border:1px solid #E5E5E5;border-radius:4px;">
             <tr>
-              <td align="center" style="padding:32px 32px 24px;border-bottom:1px solid #E5E5E5;">
+              <td align="center" style="padding:32px 32px 24px;background:#E6E6E6;border-bottom:1px solid #E5E5E5;border-radius:4px 4px 0 0;">
                 <a href="${SITE_URL}" style="text-decoration:none;">
                   <img src="${LOGO_URL}" alt="Lunexa" width="120" style="display:block;width:120px;height:auto;border:0;" />
                 </a>
@@ -122,7 +122,15 @@ function emailImageUrl(src: string): string {
   if (src.startsWith("http")) {
     return src.includes("res.cloudinary.com") ? src.replace("/upload/", "/upload/f_jpg,w_160,c_limit/") : src;
   }
-  return `${SITE_URL}${encodeURI(src.startsWith("/") ? src : `/${src}`)}`;
+  // Some saved paths already contain "%20" and some contain real spaces, so decode first and encode once
+  const path = src.startsWith("/") ? src : `/${src}`;
+  let clean = path;
+  try {
+    clean = decodeURI(path);
+  } catch {
+    // not valid encoding: use it as it is
+  }
+  return `${SITE_URL}${encodeURI(clean).replaceAll("(", "%28").replaceAll(")", "%29")}`;
 }
 
 type OrderForEmail = OrderDoc & { _id: Types.ObjectId };
