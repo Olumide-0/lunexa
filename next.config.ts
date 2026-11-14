@@ -16,7 +16,10 @@ const nextConfig: NextConfig = {
     },
   },
   images: {
-    remotePatterns: [{ protocol: "https", hostname: "flagcdn.com" }],
+    remotePatterns: [
+      { protocol: "https", hostname: "flagcdn.com" },
+      { protocol: "https", hostname: "res.cloudinary.com" }, // product images uploaded from the admin
+    ],
   },
 };
 
