@@ -101,7 +101,12 @@ async function ProductsContent({ searchParams }: { searchParams: SearchParams })
                         <Link href={`/admin/products/${product.slug}`} className="block truncate font-semibold text-black hover:underline">
                           {product.name}
                         </Link>
-                        <p className="truncate text-[12px] text-[#6B6B6B]">{product.slug}</p>
+                        <p className="flex items-center gap-[6px] truncate text-[12px] text-[#6B6B6B]">
+                          {product.isHidden && (
+                            <span className="bg-[#F2F2F2] px-[6px] py-[2px] text-[10px] font-bold uppercase text-black">Hidden</span>
+                          )}
+                          {product.slug}
+                        </p>
                       </div>
                     </div>
                   </td>

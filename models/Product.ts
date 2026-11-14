@@ -44,6 +44,8 @@ const productSchema = new Schema(
     reviewCount: { type: Number, min: 0, default: 0 },
     isNewArrival: { type: Boolean, default: false },
     isFeatured: { type: Boolean, default: false },
+    // Hidden from the store by the admin. It stays in the admin and in past orders, and can be shown again.
+    isHidden: { type: Boolean, default: false, index: true },
   },
   { timestamps: true }
 );

@@ -10,7 +10,8 @@ async function EditProductContent({ params }: { params: Promise<{ slug: string }
   await requireAdmin();
 
   const { slug } = await params;
-  const product = await getProductBySlug(slug); // not the cached one: the admin always sees the latest
+  // Not the cached one (the admin always sees the latest), and hidden products are included
+  const product = await getProductBySlug(slug, { includeHidden: true });
   if (!product) notFound();
 
   return (

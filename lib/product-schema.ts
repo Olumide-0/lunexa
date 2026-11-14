@@ -47,6 +47,7 @@ export const productInputSchema = z.object({
   stock: z.number().int().min(0),
   isNewArrival: z.boolean(),
   isFeatured: z.boolean(),
+  isHidden: z.boolean().default(false), // hidden from the store, but kept for the admin and past orders
 });
 
 export type ProductInput = z.infer<typeof productInputSchema>;
