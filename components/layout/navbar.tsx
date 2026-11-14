@@ -4,7 +4,19 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, Heart, LogOut, Menu, Package, Search, ShoppingBag, Truck, User, X } from "lucide-react";
+import {
+  ChevronDown,
+  Heart,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  Package,
+  Search,
+  ShoppingBag,
+  Truck,
+  User,
+  X,
+} from "lucide-react";
 import MegaMenu from "@/components/layout/mega-menu";
 import SearchOverlay from "@/components/layout/search-overlay";
 import { WishlistPanel } from "@/components/layout/wishlist-modal";
@@ -256,6 +268,17 @@ export default function Navbar() {
                   role="menu"
                   className="absolute right-0 top-[calc(100%+12px)] w-[180px] rounded-[4px] bg-white py-[6px] shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
                 >
+                  {user?.isAdmin && (
+                    <Link
+                      href="/admin"
+                      role="menuitem"
+                      onClick={() => setAccountOpen(false)}
+                      className="flex w-full items-center gap-[10px] px-[16px] py-[10px] text-[14px] text-black hover:bg-[#F2F2F2]"
+                    >
+                      <LayoutDashboard strokeWidth={1.5} className="size-[16px]" />
+                      Admin
+                    </Link>
+                  )}
                   <Link
                     href="/orders"
                     role="menuitem"
@@ -361,6 +384,15 @@ export default function Navbar() {
                 className="border-b border-[#D4D4D4] py-[14px] text-left text-[16px] font-bold uppercase"
               >
                 My orders
+              </Link>
+            )}
+            {signedIn && user?.isAdmin && (
+              <Link
+                href="/admin"
+                onClick={() => setMobileOpen(false)}
+                className="border-b border-[#D4D4D4] py-[14px] text-left text-[16px] font-bold uppercase"
+              >
+                Admin
               </Link>
             )}
             <Link

@@ -12,6 +12,11 @@ function adminEmails(): string[] {
     .filter(Boolean);
 }
 
+// Is this email in ADMIN_EMAILS? Used by /api/auth/me so the navbar can show the Admin link.
+export function isAdminEmail(email: string): boolean {
+  return adminEmails().includes(email.toLowerCase());
+}
+
 export type Admin = { id: string; email: string };
 
 // The signed-in admin, or null for everyone else (signed out, normal customers, no ADMIN_EMAILS set)

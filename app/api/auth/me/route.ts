@@ -1,3 +1,4 @@
+import { isAdminEmail } from "@/lib/admin";
 import { getSessionUserId } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
@@ -18,6 +19,7 @@ export async function GET() {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
+        isAdmin: isAdminEmail(user.email), // only used to show the Admin link; admin pages check again on the server
       },
     });
   } catch (error) {
