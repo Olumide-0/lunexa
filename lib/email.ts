@@ -1,4 +1,4 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import type { Types } from "mongoose";
 import { connectDB } from "@/lib/db";
 import { Order, type OrderDoc } from "@/models/Order";
@@ -71,16 +71,32 @@ function emailButton(href: string, label: string): string {
   </table>`;
 }
 
-// Sends the "reset your password" email.
-// Without RESEND_API_KEY it just skips sending (the link is still printed in the terminal in development).
-export async function sendPasswordResetEmail(to: string, firstName: string, resetLink: string) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    console.warn("RESEND_API_KEY is missing from .env.local, so the email was not sent");
+// Emails are sent from your Gmail account with an App Password (works for any customer's address).
+// GMAIL_USER=yourname@gmail.com and GMAIL_APP_PASSWORD=the 16-letter app password, in .env.local and on Vercel.
+// Without them, emails are skipped (the reset link is still printed in the terminal in development).
+async function sendEmail({ to, subject, html, text }: { to: string; subject: string; html: string; text: string }) {
+  const user = process.env.GMAIL_USER;
+  const pass = process.env.GMAIL_APP_PASSWORD;
+  if (!user || !pass) {
+    console.warn("GMAIL_USER or GMAIL_APP_PASSWORD is missing, so the email was not sent");
     return;
   }
 
-  const resend = new Resend(apiKey);
+  try {
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
+      auth: { user, pass: pass.replaceAll(" ", "") }, // Google shows the password with spaces; they are not part of it
+    });
+    await transporter.sendMail({ from: `Lunexa <${user}>`, to, subject, html, text });
+  } catch (error) {
+    console.error("Email error:", error);
+  }
+}
+
+// Sends the "reset your password" email.
+export async function sendPasswordResetEmail(to: string, firstName: string, resetLink: string) {
 
   const html = emailLayout({
     preheader: "Choose a new password for your Lunexa account.",
@@ -97,17 +113,7 @@ export async function sendPasswordResetEmail(to: string, firstName: string, rese
 
   const text = `Hi ${firstName},\n\nWe got a request to reset your Lunexa password. Open this link to choose a new one (it works once and expires in 1 hour):\n\n${resetLink}\n\nDidn't ask for this? You can ignore this email. Your password won't change.\n\nLunexa`;
 
-  const { error } = await resend.emails.send({
-    // Test mode: onboarding@resend.dev can only send to YOUR Resend signup email.
-    // After verifying your own domain, change this to e.g. "Lunexa <no-reply@lunexa.com>".
-    from: "Lunexa <onboarding@resend.dev>",
-    to,
-    subject: "Reset your Lunexa password",
-    html,
-    text,
-  });
-
-  if (error) console.error("Email error:", error);
+  await sendEmail({ to, subject: "Reset your Lunexa password", html, text });
 }
 
 /* ---------- Order confirmation ---------- */
@@ -139,12 +145,6 @@ type OrderForEmail = OrderDoc & { _id: Types.ObjectId };
 // It never throws, so a problem with the email can never break the payment flow.
 export async function sendOrderConfirmationEmail(orderId: Types.ObjectId | string) {
   try {
-    const apiKey = process.env.RESEND_API_KEY;
-    if (!apiKey) {
-      console.warn("RESEND_API_KEY is missing from .env.local, so the order email was not sent");
-      return;
-    }
-
     await connectDB();
     const order = await Order.findById(orderId).lean<OrderForEmail | null>();
     if (!order) return;
@@ -247,17 +247,7 @@ export async function sendOrderConfirmationEmail(orderId: Types.ObjectId | strin
       `Lunexa`,
     ].join("\n");
 
-    const resend = new Resend(apiKey);
-    const { error } = await resend.emails.send({
-      // Same as the reset email: until your own domain is verified in Resend,
-      // this sender can only deliver to your Resend signup email.
-      from: "Lunexa <onboarding@resend.dev>",
-      to: user.email,
-      subject: `Order ${order.orderNumber} confirmed`,
-      html,
-      text,
-    });
-    if (error) console.error("Order email error:", error);
+    await sendEmail({ to: user.email, subject: `Order ${order.orderNumber} confirmed`, html, text });
   } catch (error) {
     console.error("Order email failed:", error);
   }
