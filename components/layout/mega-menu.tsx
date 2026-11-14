@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { ChevronRight } from "lucide-react";
 import type { MenuCategory, NavMenu } from "@/data/navigation";
+import { isPathHidden } from "@/lib/menu-paths";
 import { slugify } from "@/lib/utils";
 import liftImage from "../../public/images/Frame 7 (19).png";
 import simmonsImage from "../../public/images/Frame 7 (1).png";
@@ -38,11 +39,13 @@ const promoTiles: Record<string, PromoTile[]> = {
 
 export default function MegaMenu({
   menu,
+  hiddenPaths = [],
   onMouseEnter,
   onMouseLeave,
   onNavigate,
 }: {
   menu: NavMenu;
+  hiddenPaths?: string[]; // links the admin has hidden (Admin → Categories)
   onMouseEnter: () => void;
   onMouseLeave: () => void;
   onNavigate: () => void;
@@ -52,12 +55,15 @@ export default function MegaMenu({
   // The navbar gives this component a new `key` per menu, so it resets when you switch menus.
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
-  const categories: MenuCategory[] = menu.audiences
-    ? menu.audiences[audience]
-    : menu.categories ?? [];
+  const basePath = menu.audiences ? `${menu.href}/${audience}` : menu.href;
+  const isHidden = (title: string) => isPathHidden(`${basePath}/${slugify(title)}`, hiddenPaths);
+
+  // Leave out the categories and subcategories the admin has hidden
+  const categories: MenuCategory[] = (menu.audiences ? menu.audiences[audience] : menu.categories ?? [])
+    .filter((category) => !isHidden(category.title))
+    .map((category) => ({ ...category, subcategories: category.subcategories.filter((sub) => !isHidden(sub)) }));
 
   const activeCategory = activeIndex === null ? null : categories[activeIndex];
-  const basePath = menu.audiences ? `${menu.href}/${audience}` : menu.href;
   const tiles = promoTiles[menu.label] ?? [];
 
   return (

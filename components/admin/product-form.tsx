@@ -28,6 +28,7 @@ type Values = {
   stock: string;
   isNewArrival: boolean;
   isFeatured: boolean;
+  isHidden: boolean;
 };
 
 const MAX_IMAGES = 8;
@@ -87,6 +88,7 @@ function startingValues(product?: ListingProduct): Values {
     stock: product ? String(product.stock) : "0",
     isNewArrival: product?.isNew ?? false,
     isFeatured: product?.isFeatured ?? false,
+    isHidden: product?.isHidden ?? false,
   };
 }
 
@@ -194,6 +196,7 @@ export function ProductForm({ product }: { product?: ListingProduct }) {
       stock: optionalNumber(values.stock),
       isNewArrival: values.isNewArrival,
       isFeatured: values.isFeatured,
+      isHidden: values.isHidden,
     };
 
     const res = await fetch(isEdit ? `/api/admin/products/${product?.slug}` : "/api/admin/products", {
@@ -371,6 +374,15 @@ export function ProductForm({ product }: { product?: ListingProduct }) {
               className="size-[16px] accent-black"
             />
             Featured (shows in search suggestions)
+          </label>
+          <label className="flex items-center gap-[8px] text-[14px] text-black">
+            <input
+              type="checkbox"
+              checked={values.isHidden}
+              onChange={(event) => setValues((current) => ({ ...current, isHidden: event.target.checked }))}
+              className="size-[16px] accent-black"
+            />
+            Hidden from store (stays here and in past orders)
           </label>
         </div>
       </Card>

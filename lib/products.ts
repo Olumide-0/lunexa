@@ -1,6 +1,7 @@
 import { cacheLife, cacheTag } from "next/cache";
 import type { Types } from "mongoose";
 import { connectDB } from "@/lib/db";
+import { getHiddenCategories } from "@/lib/menu-visibility";
 import { Product as ProductModel, type ProductDoc } from "@/models/Product";
 import type { Product } from "@/types";
 
@@ -13,9 +14,13 @@ export type ListingProduct = Product & {
   fit?: string;
   pattern?: string;
   discount?: number;
+  isHidden?: boolean; // hidden from the store by the admin (only the admin ever sees these)
 };
 
 type ProductLean = ProductDoc & { _id: Types.ObjectId };
+
+// Added to every store query so products the admin has hidden never show
+const visibleOnly = { isHidden: { $ne: true } };
 
 // Turns a database document into the plain object your components already expect
 function toProduct(doc: ProductLean): ListingProduct {
@@ -44,6 +49,7 @@ function toProduct(doc: ProductLean): ListingProduct {
     reviewCount: doc.reviewCount ?? 0,
     isNew: doc.isNewArrival ?? false, // renamed back
     isFeatured: doc.isFeatured ?? false,
+    isHidden: doc.isHidden ?? false,
   } as ListingProduct;
 }
 
@@ -58,7 +64,7 @@ export type ProductFilter = {
 export async function queryProducts(filter: ProductFilter = {}): Promise<ListingProduct[]> {
   await connectDB();
 
-  const query: Record<string, string> = {};
+  const query: Record<string, unknown> = { ...visibleOnly };
   if (filter.category) query.category = filter.category;
   if (filter.subcategory) query.subcategory = filter.subcategory;
   if (filter.collection) query.collectionName = filter.collection;
@@ -71,10 +77,17 @@ export async function queryProducts(filter: ProductFilter = {}): Promise<Listing
   return docs.map(toProduct);
 }
 
-// One product by its URL slug, or null if there isn't one
-export async function getProductBySlug(slug: string): Promise<ListingProduct | null> {
+// One product by its URL slug, or null if there isn't one (or it is hidden).
+// The admin edit page passes { includeHidden: true } so hidden products can still be edited.
+export async function getProductBySlug(
+  slug: string,
+  { includeHidden = false }: { includeHidden?: boolean } = {}
+): Promise<ListingProduct | null> {
   await connectDB();
-  const doc = await ProductModel.findOne({ slug: slug.toLowerCase() }).lean<ProductLean | null>();
+  const doc = await ProductModel.findOne({
+    slug: slug.toLowerCase(),
+    ...(includeHidden ? {} : visibleOnly),
+  }).lean<ProductLean | null>();
   return doc ? toProduct(doc) : null;
 }
 
@@ -109,14 +122,16 @@ export async function getCachedProductBySlug(slug: string): Promise<ListingProdu
 const escapeRegex = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 // Products that contain EVERY word of the query in name, subtitle, description, category,
-// collection, badge or colour name
+// collection, badge or colour name. Products in a category the admin has hidden are left out.
 export async function searchProducts(q: string, limit = 40): Promise<ListingProduct[]> {
   const words = q.trim().split(/\s+/).filter(Boolean).slice(0, 6);
   if (words.length === 0) return [];
 
-  await connectDB();
+  const [hiddenCategories] = await Promise.all([getHiddenCategories(), connectDB()]);
 
   const docs = await ProductModel.find({
+    ...visibleOnly,
+    category: { $nin: hiddenCategories },
     $and: words.map((word) => {
       // "leggings" also matches "legging", "shorts" matches "short", and so on
       const stem = word.length > 3 && word.endsWith("s") ? word.slice(0, -1) : word;
@@ -143,11 +158,13 @@ export async function searchProducts(q: string, limit = 40): Promise<ListingProd
 }
 
 // What to show before the person types: featured products, or just the first few
+// (never from a category the admin has hidden)
 export async function getPopularProducts(limit = 4): Promise<ListingProduct[]> {
-  await connectDB();
-  let docs = await ProductModel.find({ isFeatured: true }).sort({ _id: 1 }).limit(limit).lean<ProductLean[]>();
+  const [hiddenCategories] = await Promise.all([getHiddenCategories(), connectDB()]);
+  const visible = { ...visibleOnly, category: { $nin: hiddenCategories } };
+  let docs = await ProductModel.find({ ...visible, isFeatured: true }).sort({ _id: 1 }).limit(limit).lean<ProductLean[]>();
   if (docs.length === 0) {
-    docs = await ProductModel.find({ collectionName: { $ne: "section-tiles" } })
+    docs = await ProductModel.find({ ...visible, collectionName: { $ne: "section-tiles" } })
       .sort({ _id: 1 })
       .limit(limit)
       .lean<ProductLean[]>();
@@ -160,6 +177,6 @@ export async function getProductsByIds(ids: string[]): Promise<ListingProduct[]>
   const valid = ids.filter((id) => /^[a-f0-9]{24}$/i.test(id)).slice(0, 100);
   if (valid.length === 0) return [];
   await connectDB();
-  const docs = await ProductModel.find({ _id: { $in: valid } }).lean<ProductLean[]>();
+  const docs = await ProductModel.find({ _id: { $in: valid }, ...visibleOnly }).lean<ProductLean[]>();
   return docs.map(toProduct);
 }

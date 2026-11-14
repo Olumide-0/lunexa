@@ -22,13 +22,16 @@ import SearchOverlay from "@/components/layout/search-overlay";
 import { WishlistPanel } from "@/components/layout/wishlist-modal";
 import ThemeToggle from "@/components/theme/theme-toggle";
 import { navMenus } from "@/data/navigation";
+import { isPathHidden } from "@/lib/menu-paths";
 import { useAuthStore } from "@/store/auth-store";
 import { selectCartCount, useCartStore } from "@/store/cart-store";
 import { useWishlistStore } from "@/store/wishlist-store";
 import logo from "../../public/images/image 14.png";
 
-export default function Navbar() {
+// hiddenPaths = menu links the admin has hidden (Admin → Categories)
+export default function Navbar({ hiddenPaths = [] }: { hiddenPaths?: string[] }) {
   const pathname = usePathname();
+  const menus = navMenus.filter((menu) => !isPathHidden(menu.href, hiddenPaths));
 
   // ----- Local UI state -----
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -111,7 +114,7 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [accountOpen]);
 
-  const currentMenu = navMenus.find((menu) => menu.label === activeMenu);
+  const currentMenu = menus.find((menu) => menu.label === activeMenu);
 
   // Only trust the stores after they've loaded (avoids a "signed out" flash)
   const signedIn = hydrated && isLoggedIn;
@@ -159,7 +162,7 @@ export default function Navbar() {
 
         {/* Center: nav links with mega menu (desktop) */}
         <nav className="hidden h-full items-center gap-[32px] self-stretch lg:flex xl:gap-[51px]">
-          {navMenus.map((menu) => {
+          {menus.map((menu) => {
             const isActive = activeMenu === menu.label;
             return (
               <div
@@ -337,6 +340,7 @@ export default function Navbar() {
         <MegaMenu
           key={currentMenu.label}
           menu={currentMenu}
+          hiddenPaths={hiddenPaths}
           onMouseEnter={cancelClose}
           onMouseLeave={scheduleClose}
           onNavigate={closeMenu}
@@ -347,7 +351,7 @@ export default function Navbar() {
       {mobileOpen && (
         <div className="border-t border-[#D4D4D4] px-[16px] pb-[24px] pt-[8px] lg:hidden">
           <nav className="flex flex-col">
-            {navMenus.map((menu) => (
+            {menus.map((menu) => (
               <Link
                 key={menu.href}
                 href={menu.href}

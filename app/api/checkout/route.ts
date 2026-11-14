@@ -59,7 +59,7 @@ export async function POST(request: Request) {
 
     for (const item of items) {
       const product = byId.get(item.productId.toLowerCase());
-      if (!product || !product.sizes.includes(item.size)) {
+      if (!product || product.isHidden || !product.sizes.includes(item.size)) {
         return Response.json(
           { message: "An item in your bag is no longer available. Remove it and add it again." },
           { status: 400 }

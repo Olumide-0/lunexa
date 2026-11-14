@@ -42,11 +42,11 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   const product = await Product.findOne({ slug: slug.toLowerCase() }).select("_id");
   if (!product) return Response.json({ message: "Product not found" }, { status: 404 });
 
-  // A product that was ordered stays, so old order pages keep working. Set its stock to 0 instead.
+  // A product that was ordered stays, so old order pages keep working. Hide it from the store instead.
   const ordered = await Order.exists({ "items.product": product._id });
   if (ordered) {
     return Response.json(
-      { message: "This product is in past orders, so it can't be deleted. Set its stock to 0 instead." },
+      { message: 'This product is in past orders, so it can\'t be deleted. Tick "Hidden from store" on its edit page instead.' },
       { status: 409 }
     );
   }
