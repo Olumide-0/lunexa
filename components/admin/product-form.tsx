@@ -96,8 +96,13 @@ export function ProductForm({ product }: { product?: ListingProduct }) {
   const fileInput = useRef<HTMLInputElement>(null);
 
   const [values, setValues] = useState<Values>(() => startingValues(product));
-  const [images, setImages] = useState<string[]>(product?.images ?? []);
-  const [colors, setColors] = useState<ColorRow[]>(product?.colors ?? []);
+  // Products from the database always have string links; the type also allows bundled images, so keep only strings
+  const [images, setImages] = useState<string[]>(
+    () => product?.images.filter((image): image is string => typeof image === "string") ?? []
+  );
+  const [colors, setColors] = useState<ColorRow[]>(
+    () => product?.colors?.map((color) => ({ name: color.name, hex: color.hex ?? "#000000" })) ?? []
+  );
   const [slugTouched, setSlugTouched] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
