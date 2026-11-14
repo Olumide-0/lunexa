@@ -1,5 +1,5 @@
 import "server-only";
-import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import { getSessionUserId } from "@/lib/auth";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
@@ -29,10 +29,11 @@ export async function getAdmin(): Promise<Admin | null> {
   return { id: String(userId), email: user.email };
 }
 
-// Use at the top of every admin page and admin API route.
-// Anyone who is not an admin gets the normal 404 page, so /admin looks like it doesn't exist.
+// Use at the top of every admin page.
+// Anyone who is not an admin is sent to a page that says the area is for admins only.
+// (The admin API routes still answer "Not found", because nobody opens those in a browser.)
 export async function requireAdmin(): Promise<Admin> {
   const admin = await getAdmin();
-  if (!admin) notFound();
+  if (!admin) redirect("/admin-only");
   return admin;
 }
