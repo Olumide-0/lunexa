@@ -1,5 +1,6 @@
 import type { Types } from "mongoose";
 import { connectDB } from "@/lib/db";
+import { sendOrderConfirmationEmail } from "@/lib/email";
 import { verifyTransaction } from "@/lib/paystack";
 import { Order, type OrderDoc } from "@/models/Order";
 import { Product } from "@/models/Product";
@@ -29,10 +30,12 @@ export async function GET(request: Request) {
     if (transaction.status === "success") {
       // The amount must match exactly, so nobody can pay less than the order total
       if (transaction.currency === "NGN" && transaction.amount === order.amountNgn * 100) {
-        await Order.updateOne(
+        const result = await Order.updateOne(
           { _id: order._id, status: "pending" }, // only if still pending, so it can't run twice
           { $set: { status: "paid", "payment.paidAt": new Date() } }
         );
+        // Only the request that really changed the order sends the email, so it goes out once
+        if (result.modifiedCount === 1) await sendOrderConfirmationEmail(order._id);
       } else {
         console.error(`Payment ${reference}: amount or currency does not match the order`, transaction);
       }

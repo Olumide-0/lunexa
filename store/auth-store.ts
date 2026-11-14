@@ -6,6 +6,7 @@ type AuthUser = {
   email: string;
   firstName?: string;
   lastName?: string;
+  isAdmin?: boolean; // only decides whether the navbar shows the Admin link
 };
 
 type AuthView = "login" | "register" | "forgot" | "reset";
@@ -37,7 +38,10 @@ export const useAuthStore = create<AuthState>()(
       resetToken: null,
       isLogoutModalOpen: false,
 
-      logIn: (user) => set({ isLoggedIn: true, user }),
+      logIn: (user) => {
+        set({ isLoggedIn: true, user });
+        void useAuthStore.getState().checkSession(); // asks the server whether this user is an admin
+      },
       logOut: () => set({ isLoggedIn: false, user: null }),
 
       // Ask the server who is logged in (runs once when the site loads)

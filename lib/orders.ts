@@ -1,4 +1,5 @@
 import type { Types } from "mongoose";
+import { sendOrderConfirmationEmail } from "@/lib/email";
 import { verifyTransaction } from "@/lib/paystack";
 import { Order, type OrderDoc } from "@/models/Order";
 import { Product } from "@/models/Product";
@@ -42,10 +43,12 @@ export async function expirePendingOrders() {
           transaction.currency === "NGN" &&
           transaction.amount === order.amountNgn * 100
         ) {
-          await Order.updateOne(
+          const result = await Order.updateOne(
             { _id: order._id, status: "pending" },
             { $set: { status: "paid", "payment.paidAt": new Date() } }
           );
+          // They paid but never came back, so this is the first time we confirm it: send the email (once)
+          if (result.modifiedCount === 1) await sendOrderConfirmationEmail(order._id);
           continue;
         }
       }
